@@ -1,4 +1,4 @@
-require("map-functions")
+
 
 function love.load()
     wf = require 'libraries/windfield'
@@ -6,7 +6,7 @@ function love.load()
 
     camera = require 'libraries/camera'
     cam = camera()
-    cam.scale = cam.scale * 2.5
+    -- cam.scale = cam.scale * 2.5
 
     anim8 = require "libraries.anim8"
     love.graphics.setDefaultFilter("nearest", "nearest")
@@ -14,10 +14,9 @@ function love.load()
     sti = require "libraries/sti"
     gameMap = sti('maps/test2.lua')
 
-    
+    inv = require "inv_test"
 
-    -- loadMap("maps/chez-peter.lua")
-    player = { x = 50, y = 50, speed = 65 }
+    player = { x = 50, y = 50, speed = 50 }
     player.collider = world:newBSGRectangleCollider(400, 250, 13, 11, 2.5)
     player.collider:setFixedRotation(true)
     player.spriteSheet = love.graphics.newImage("images/character_14_frame16x20.png")
@@ -39,6 +38,7 @@ function love.load()
             table.insert(walls, wall)
         end
     end
+
     plants = {}
     if gameMap.layers["Plants"] then
         for i, obj in pairs(gameMap.layers["Plants"].objects) do
@@ -66,11 +66,16 @@ function love.load()
         end
     end
 
-
+    inv.load()
 end
 
+function love.keypressed(key)
+    inv.keypressed(key)
+end
 
 function love.update(dt)
+    cam.scale = love.graphics.getHeight() / 230
+
     local isMoving = false
 
     local vx = 0
@@ -85,13 +90,11 @@ function love.update(dt)
         vx = player.speed * -1
         player.anim = player.animations.left
         isMoving = true
-
     end
     if love.keyboard.isDown("s") then
         vy = player.speed
         player.anim = player.animations.down
         isMoving = true
-
     end
     if love.keyboard.isDown("w") then
         vy = player.speed * -1
@@ -108,7 +111,6 @@ function love.update(dt)
     world:update(dt)
     player.x = player.collider:getX()
     player.y = player.collider:getY()
-
 
     player.anim:update(dt)
 
@@ -132,14 +134,9 @@ function love.update(dt)
     if cam.y > (mapH - h/2/cam.scale) then
         cam.y = (mapH - h/2/cam.scale)
     end
-
 end
 
-
-
-
 function love.draw()
-    -- drawMap()
     cam:attach()
         gameMap:drawLayer(gameMap.layers["Base Layer"])
         gameMap:drawLayer(gameMap.layers["Height 1"])
@@ -147,10 +144,7 @@ function love.draw()
         gameMap:drawLayer(gameMap.layers["Test2"])
         player.anim:draw(player.spriteSheet, player.x, player.y, nil, 1, 1, 8, 14)
         gameMap:drawLayer(gameMap.layers["Height 2"])
-        -- world:draw()
-
-
     cam:detach()
 
-
+    inv.draw()
 end
