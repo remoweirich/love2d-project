@@ -1,5 +1,3 @@
-
-
 function love.load()
     wf = require 'libraries/windfield'
     world = wf.newWorld(0, 0)
@@ -14,7 +12,7 @@ function love.load()
     sti = require "libraries/sti"
     gameMap = sti('maps/test2.lua')
 
-    inv = require "inv_test"
+    inv = require "inventory"
 
     player = { x = 50, y = 50, speed = 50 }
     player.collider = world:newBSGRectangleCollider(400, 250, 13, 11, 2.5)
@@ -29,6 +27,47 @@ function love.load()
     player.animations.up = anim8.newAnimation(player.grid('1-3', 4), 0.2 )
 
     player.anim = player.animations.left
+
+    player.inventory = inv.new(30, 30)
+
+
+
+
+
+    local Weapon = require "Weapon"
+    local Sword = Weapon.new({
+    type="w_Sword", name = "Knight's Straight Sword", 
+    base_weight = 6, 
+    value = 8, 
+    durability = 76, 
+    max_durability = 125, 
+    stat_bonuses = {attack=10, defence=1},
+    damage_type = "Slashing"
+})
+    player.inventory:add_item(Sword)
+
+    local Consumable = require "Consumable"
+    local potion = Consumable.new("c_Potion", "Great Health Potion", 2, 4, "Heal for 10 HP")
+    player.inventory:add_item(potion)
+    player.inventory:add_item(potion)
+
+    
+    local Axe = Weapon.new({
+    type="w_Axe", name = "Executioner's Axe",
+    base_weight = 12, 
+    value = 8, 
+    durability = 55, 
+    max_durability = 125, 
+    stat_bonuses = {attack=16, defence=0},
+    damage_type = "Slashing"
+})
+    player.inventory:add_item(Axe)
+
+
+
+
+
+
 
     walls = {}
     if gameMap.layers["Walls"] then
@@ -146,5 +185,5 @@ function love.draw()
         gameMap:drawLayer(gameMap.layers["Height 2"])
     cam:detach()
 
-    inv.draw()
+    inv.draw(player.inventory)
 end

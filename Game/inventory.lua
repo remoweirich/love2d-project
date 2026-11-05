@@ -1,73 +1,339 @@
-local bgImage
-local inventory = {
-    startX = 120,   -- X position where slot (1,1) starts
-    startY = 150,   -- Y position where slot (1,1) starts
-    slotSize = 48,  -- Size of each slot box (48x48 px)
-    spacing = 8,    -- Gap between slots
-    cols = 5,
-    rows = 4,
-    slots = {}      -- 2D table holding item data
+local inv = {}
+inv.__index = inv
+local allItems
+
+local inventoryOpen = false
+local inventoryBg
+local selectedIndex = 1
+
+-- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
+local UNIT = 3 -- kleine Abstände waren für 800px gedacht -> x3
+
+local baseLayout = {
+    leftPage  = { startX = 255,  startY = 270, width = 810, itemHeight = 120 },
+    rightPage = { startX = 1335, startY = 270, width = 810 }
 }
 
-function loadInv()
-    bgImage = love.graphics.newImage("images/inventory.png")
+function inv.new(max_weight, money)
+    local instance = {
+        current_weight = 0,
+        max_weight = max_weight,
+        items = {
+            items = {},
+            equipment = {},
+            weapons = {},
+            armor = {},
+            consumables = {}
+        },
+        money = money
+    }
+    setmetatable(instance, inv)
+    return instance
+end
 
-    -- Initialize an empty grid
-    for r = 1, inventory.rows do
-        inventory.slots[r] = {}
-        for c = 1, inventory.cols do
-            inventory.slots[r][c] = nil -- nil indicates an empty slot
+local function find_index(item, list)
+    for i, v in ipairs(list) do
+        if v == item then
+            return i
         end
     end
-
-    -- Add a test item at Row 1, Column 2
-    inventory.slots[1][2] = { name = "Health Potion", id = "potion_hp" }
+    return nil
 end
 
--- Convert grid index (col, row) -> screen coordinates (x, y)
-local function getSlotScreenPos(col, row)
-    local x = inventory.startX + (col - 1) * (inventory.slotSize + inventory.spacing)
-    local y = inventory.startY + (row - 1) * (inventory.slotSize + inventory.spacing)
-    return x, y
-end
-
--- Convert mouse coordinates (mx, my) -> grid index (col, row)
-local function getGridPosAt(mx, my)
-    local col = math.floor((mx - inventory.startX) / (inventory.slotSize + inventory.spacing)) + 1
-    local row = math.floor((my - inventory.startY) / (inventory.slotSize + inventory.spacing)) + 1
-
-    if col >= 1 and col <= inventory.cols and row >= 1 and row <= inventory.rows then
-        return col, row
+local function getAllItems(inventory)
+    local catOrder = {"items", "equipment", "weapons", "armor", "consumables"}
+    local items = {}
+    for i, category in ipairs(catOrder) do
+        for j, itm in ipairs(inventory.items[category]) do
+            table.insert(items, itm)
+        end
     end
-    return nil, nil -- Cursor is outside grid bounds
+    return items
 end
 
-function drawInv()
-    -- 1. Draw your inventory background artwork
-    -- love.graphics.draw(bgImage, 100, 100)
+function inv:add_item(item)
+    local prefix = string.sub(item.type, 1, 2)
 
-    -- 2. Render items in their respective invisible grid slots
-    for r = 1, inventory.rows do
-        for c = 1, inventory.cols do
-            local x, y = getSlotScreenPos(c, r)
-            local item = inventory.slots[r][c]
+    if item.base_weight + self.current_weight > self.max_weight then
+        print("Item is too heavy to add to inventory")
+        return
+    end
+    if self.money < item.value then
+        print("Item is too expensive, sell other items first!")
+        return
+    end
 
-            if item then
-                -- Render item icon at slot position
-                love.graphics.setColor(1, 0.2, 0.2, 1)
-                love.graphics.rectangle("fill", x + 4, y + 4, inventory.slotSize - 8, inventory.slotSize - 8)
-                love.graphics.setColor(1, 1, 1, 1)
+    if prefix == "c_" then
+        for i=1,#self.items.consumables do
+            if self.items.consumables[i].type == item.type then
+                self.items.consumables[i] = self.items.consumables[i] + item
+
+                self.current_weight = self.current_weight + item.base_weight
+                self.money = self.money - item.value
+
+                return
             end
         end
-    end
+        table.insert(self.items.consumables, item)
+        self.current_weight = self.current_weight + item.base_weight
+        self.money = self.money - item.value
 
-    -- 3. Highlight slot currently under the mouse
-    local mx, my = love.mouse.getPosition()
-    local col, row = getGridPosAt(mx, my)
-    if col and row then
-        local x, y = getSlotScreenPos(col, row)
-        love.graphics.setColor(1, 1, 0, 0.3) -- Semi-transparent highlight
-        love.graphics.rectangle("fill", x, y, inventory.slotSize, inventory.slotSize)
-        love.graphics.setColor(1, 1, 1, 1)
+        
+    elseif prefix == "i_" then
+        table.insert(self.items.items, item)
+        self.current_weight = self.current_weight + item.base_weight
+        self.money = self.money - item.value
+
+    elseif prefix == "e_" then
+        table.insert(self.items.equipment, item)
+        self.current_weight = self.current_weight + item.base_weight
+        self.money = self.money - item.value
+
+    elseif prefix == "w_" then
+        table.insert(self.items.weapons, item)
+        self.current_weight = self.current_weight + item.base_weight
+        self.money = self.money - item.value
+
+    elseif prefix == "a_" then
+        table.insert(self.items.armor, item)
+        self.current_weight = self.current_weight + item.base_weight
+        self.money = self.money - item.value
     end
 end
+
+function inv:remove_item(item)
+    local prefix = string.sub(item.type, 1, 2)
+
+    if prefix == "c_" then
+        local i = find_index(item, self.items.consumables)
+        self.items.consumables[i] = self.items.consumables[i] - 1
+        if self.items.consumables[i].quantity <= 0 then
+            table.remove(self.items.consumables, i)
+        end
+
+        self.current_weight = self.current_weight - item.base_weight
+        self.money = self.money + item.value
+        
+        return
+
+    elseif prefix == "i_" then
+        local i = find_index(item, self.items.items)
+        table.remove(self.items.items, i)
+        self.current_weight = self.current_weight - item.base_weight
+        self.money = self.money + item.value
+
+    elseif prefix == "e_" then
+        local i = find_index(item, self.items.equipment)
+        table.remove(self.items.equipment, i)
+        self.current_weight = self.current_weight - item.base_weight
+        self.money = self.money + item.value
+
+    elseif prefix == "w_" then
+        local i = find_index(item, self.items.weapons)
+        table.remove(self.items.weapons, i)
+        self.current_weight = self.current_weight - item.base_weight
+        self.money = self.money + item.value
+
+    elseif prefix == "a_" then
+        local i = find_index(item, self.items.armor)
+        table.remove(self.items.armor, i)
+        self.current_weight = self.current_weight - item.base_weight
+        self.money = self.money + item.value
+    end
+end
+
+
+-- Schriftgrößen in Originalbild-Pixeln
+local baseFontSize = { normal = 14 * UNIT, title = 20 * UNIT }
+
+local icons = {
+    { name = "Knight's Straight Sword", icon = "images/icons/KnightsStraightSword.png" },
+    { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},
+    { name = "Executioner's Axe", icon = "images/icons/ExecutionersAxe.png"}
+}
+
+local items = {
+    { name = "Health Potion", count = 3, type = "Consumable", desc = "Restores 50 HP when consumed. Smells faintly of wild berries.", color = { 0.9, 0.2, 0.2 } },
+    { name = "Forest Key",    count = 1, type = "Key Item",   desc = "An old iron key wrapped in thick vines. Opens the ruined gate.", color = { 0.9, 0.8, 0.2 } },
+    { name = "Antidote",      count = 2, type = "Consumable", desc = "Cures poison instantly upon drinking.", color = { 0.2, 0.8, 0.3 } },
+    { name = "Wooden Shield", count = 1, type = "Equipment",  desc = "A sturdy oak shield. Blocks incoming attacks from wild beasts.", color = { 0.6, 0.4, 0.2 } },
+}
+
+local fonts = {}
+local lastScale = nil
+
+local function updateFonts(scale)
+    if scale == lastScale then return end
+    lastScale = scale
+    for name, size in pairs(baseFontSize) do
+        local f = love.graphics.newFont(math.max(8, math.floor(size * scale + 0.5)))
+        f:setFilter("linear", "linear")
+        fonts[name] = f
+    end
+end
+
+function inv.load()
+    inventoryBg = love.graphics.newImage("images/inventory.png")
+end
+
+function inv.isOpen()
+    return inventoryOpen
+end
+
+local function getTransform()
+    local winW, winH = love.graphics.getWidth(), love.graphics.getHeight()
+    local imgW, imgH = inventoryBg:getWidth(), inventoryBg:getHeight()
+
+    local scale = (winH * 0.85) / imgH
+    local bgX = math.floor((winW - imgW * scale) / 2)
+    local bgY = math.floor((winH - imgH * scale) / 2)
+    local w, h = imgW * scale, imgH * scale
+
+    return bgX, bgY, scale, w, h
+end
+
+function inv.keypressed(key)
+    if key == "tab" then
+        inventoryOpen = not inventoryOpen
+    end
+
+    if inventoryOpen then
+        if key == "down" then
+            selectedIndex = math.min(selectedIndex + 1, #allItems)
+        elseif key == "up" then
+            selectedIndex = math.max(selectedIndex - 1, 1)
+        end
+    end
+end
+
+-- function inv.mousepressed(x, y, button)
+--     if not inventoryOpen or button ~= 1 then return end
+
+--     local bgX, bgY, scale = getTransform()
+--     local leftX = bgX + baseLayout.leftPage.startX * scale
+--     local leftY = bgY + baseLayout.leftPage.startY * scale
+--     local itemW = baseLayout.leftPage.width * scale
+--     local itemH = baseLayout.leftPage.itemHeight * scale
+
+--     for i = 1, #myInv.items do
+--         local itemY = leftY + (i - 1) * itemH
+--         if x >= leftX and x <= leftX + itemW and y >= itemY and y < itemY + itemH then
+--             selectedIndex = i
+--             break
+--         end
+--     end
+-- end
+
+function inv.draw(myInv)
+    love.graphics.setDefaultFilter("nearest", "nearest")
+    if not inventoryOpen then return end
+
+    local bgX, bgY, scale, invW, invH = getTransform()
+    updateFonts(scale)
+
+    allItems = getAllItems(myInv)
+
+    -- "u" = eine Design-Einheit in Bildschirmpixeln (für kleine Abstände)
+    local u = UNIT * scale
+
+    love.graphics.setColor(0, 0, 0, 0.6)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(inventoryBg, bgX, bgY, 0, scale, scale)
+
+    -- LINKE SEITE
+    local leftX = bgX + baseLayout.leftPage.startX * scale
+    local leftY = bgY + baseLayout.leftPage.startY * scale
+    local itemW = baseLayout.leftPage.width * scale
+    local itemH = baseLayout.leftPage.itemHeight * scale
+
+    love.graphics.setFont(fonts.title)
+    love.graphics.setColor(0.2, 0.15, 0.1, 1)
+    love.graphics.print("INVENTORY", leftX, leftY - fonts.title:getHeight() - 6 * u)
+
+    love.graphics.setFont(fonts.normal)
+    for i, item in ipairs(allItems) do
+        local itemY = leftY + (i - 1) * itemH
+        local rowH = itemH - 4 * u
+
+        if i == selectedIndex then
+            love.graphics.setColor(0.8, 0.65, 0.3, 0.35)
+            love.graphics.rectangle("fill", leftX, itemY, itemW, rowH)
+            love.graphics.setColor(0.4, 0.25, 0.1, 0.8)
+            love.graphics.rectangle("line", leftX, itemY, itemW, rowH)
+        end
+
+        local iconSize = rowH - 8 * u
+        love.graphics.setColor(0.3,0.2,0.1,0.3)
+        love.graphics.rectangle("fill", leftX + 4 * u, itemY + 4 * u, iconSize, iconSize)
+
+        for _, tbl in ipairs(icons) do
+            if tbl.name == item.name then
+                local icn = love.graphics.newImage(tbl.icon)
+                love.graphics.setColor(1,1,1,1)
+                love.graphics.draw(icn, leftX + 2*u, itemY+ 2*u, 0, 1/2.1*u, 1/2.1*u)
+            end
+        end
+        love.graphics.setColor(0.3, 0.2, 0.1, 0.8)
+        love.graphics.rectangle("line", leftX + 4 * u, itemY + 4 * u, iconSize, iconSize)
+
+        local textY = itemY + (rowH - fonts.normal:getHeight()) / 2
+        love.graphics.setColor(0.2, 0.15, 0.1, 1)
+        love.graphics.print(item:display(), leftX + iconSize + 12 * u, textY)
+    end
+
+    -- RECHTE SEITE
+    local rightX = bgX + baseLayout.rightPage.startX * scale
+    local rightY = bgY + baseLayout.rightPage.startY * scale
+    local rightW = baseLayout.rightPage.width * scale
+
+    love.graphics.setFont(fonts.normal)
+    love.graphics.setColor(0.2, 0.15, 0.1, 1)
+    love.graphics.print("Weight: " .. myInv.current_weight .. "/" .. myInv.max_weight, rightX, rightY - fonts.normal:getHeight() - 8 * u)
+    local currentGold = myInv.money
+    local wealthString = "Wealth: " .. tostring(currentGold) .. "G"
+    local padLeft = leftX - bgX
+    love.graphics.print(wealthString, bgX + invW - padLeft - fonts.normal:getWidth(wealthString), rightY - fonts.normal:getHeight() - 8 * u)
+
+    local sel = allItems[selectedIndex]
+
+    if sel then
+        local previewY = rightY + 5*u
+        local previewSize = 70 * u
+        love.graphics.setColor(0.3,0.2,0.1,0.3)
+        love.graphics.rectangle("fill", rightX, previewY, previewSize, previewSize)
+
+        for _, tbl in ipairs(icons) do
+            if tbl.name == sel.name then
+                local icn = love.graphics.newImage(tbl.icon)
+                love.graphics.setColor(1,1,1,1)
+                love.graphics.draw(icn, rightX + 2*u, previewY + 2*u, 0, 1*u, 1*u)
+            end
+        end
+        love.graphics.setColor(0.3, 0.2, 0.1, 0.8)
+        love.graphics.rectangle("line", rightX, previewY, previewSize, previewSize)
+
+        
+        local typeX = rightX + previewSize + 4 * u
+        local typeY = previewY
+        love.graphics.setFont(fonts.normal)
+        love.graphics.setColor(0.5, 0.4, 0.3, 1)
+        love.graphics.print("Type: " .. string.sub(sel.type, 3, #sel.type), typeX, typeY)
+        sel:displayAfterType(typeX, typeY, u, fonts)
+        
+        local titleY = previewY + previewSize + 3*u
+        love.graphics.setFont(fonts.title)
+        love.graphics.setColor(0.25, 0.15, 0.1, 1)
+        love.graphics.print(sel.name, rightX, titleY)
+
+        love.graphics.setFont(fonts.normal)
+        local descY = titleY + fonts.title:getHeight() + u
+        love.graphics.setColor(0.2, 0.15, 0.1, 1)
+        love.graphics.printf(sel:describe(), rightX, descY, rightW, "left")
+    end
+
+    love.graphics.setColor(1, 1, 1, 1)
+end
+
+return inv
