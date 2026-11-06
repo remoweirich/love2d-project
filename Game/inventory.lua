@@ -2,9 +2,13 @@ local inv = {}
 inv.__index = inv
 local allItems
 
-local inventoryOpen = false
 local inventoryBg
 local selectedIndex = 1
+
+local ui = {
+    bookOpen = false,
+    chest = nil
+}
 
 -- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
 local UNIT = 3 -- kleine Abstände waren für 800px gedacht -> x3
@@ -51,14 +55,14 @@ local function getAllItems(inventory)
     return items
 end
 
-function inv:add_item(item)
+function inv:add_item(item, cost)
     local prefix = string.sub(item.type, 1, 2)
 
     if item.base_weight + self.current_weight > self.max_weight then
         print("Item is too heavy to add to inventory")
         return
     end
-    if self.money < item.value then
+    if self.money < cost then
         print("Item is too expensive, sell other items first!")
         return
     end
@@ -69,39 +73,39 @@ function inv:add_item(item)
                 self.items.consumables[i] = self.items.consumables[i] + item
 
                 self.current_weight = self.current_weight + item.base_weight
-                self.money = self.money - item.value
+                self.money = self.money - cost
 
                 return
             end
         end
         table.insert(self.items.consumables, item)
         self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - item.value
+        self.money = self.money - cost
 
         
     elseif prefix == "i_" then
         table.insert(self.items.items, item)
         self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - item.value
+        self.money = self.money - cost
 
     elseif prefix == "e_" then
         table.insert(self.items.equipment, item)
         self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - item.value
+        self.money = self.money - cost
 
     elseif prefix == "w_" then
         table.insert(self.items.weapons, item)
         self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - item.value
+        self.money = self.money - cost
 
     elseif prefix == "a_" then
         table.insert(self.items.armor, item)
         self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - item.value
+        self.money = self.money - cost
     end
 end
 
-function inv:remove_item(item)
+function inv:remove_item(item, cost)
     local prefix = string.sub(item.type, 1, 2)
 
     if prefix == "c_" then
@@ -112,7 +116,7 @@ function inv:remove_item(item)
         end
 
         self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + item.value
+        self.money = self.money + cost
         
         return
 
@@ -120,25 +124,25 @@ function inv:remove_item(item)
         local i = find_index(item, self.items.items)
         table.remove(self.items.items, i)
         self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + item.value
+        self.money = self.money + cost
 
     elseif prefix == "e_" then
         local i = find_index(item, self.items.equipment)
         table.remove(self.items.equipment, i)
         self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + item.value
+        self.money = self.money + cost
 
     elseif prefix == "w_" then
         local i = find_index(item, self.items.weapons)
         table.remove(self.items.weapons, i)
         self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + item.value
+        self.money = self.money + cost
 
     elseif prefix == "a_" then
         local i = find_index(item, self.items.armor)
         table.remove(self.items.armor, i)
         self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + item.value
+        self.money = self.money + cost
     end
 end
 
@@ -150,13 +154,6 @@ local icons = {
     { name = "Knight's Straight Sword", icon = "images/icons/KnightsStraightSword.png" },
     { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},
     { name = "Executioner's Axe", icon = "images/icons/ExecutionersAxe.png"}
-}
-
-local items = {
-    { name = "Health Potion", count = 3, type = "Consumable", desc = "Restores 50 HP when consumed. Smells faintly of wild berries.", color = { 0.9, 0.2, 0.2 } },
-    { name = "Forest Key",    count = 1, type = "Key Item",   desc = "An old iron key wrapped in thick vines. Opens the ruined gate.", color = { 0.9, 0.8, 0.2 } },
-    { name = "Antidote",      count = 2, type = "Consumable", desc = "Cures poison instantly upon drinking.", color = { 0.2, 0.8, 0.3 } },
-    { name = "Wooden Shield", count = 1, type = "Equipment",  desc = "A sturdy oak shield. Blocks incoming attacks from wild beasts.", color = { 0.6, 0.4, 0.2 } },
 }
 
 local fonts = {}
@@ -177,7 +174,7 @@ function inv.load()
 end
 
 function inv.isOpen()
-    return inventoryOpen
+    return bookOpen
 end
 
 local function getTransform()
@@ -194,10 +191,10 @@ end
 
 function inv.keypressed(key)
     if key == "tab" then
-        inventoryOpen = not inventoryOpen
+        bookOpen = not bookOpen
     end
 
-    if inventoryOpen then
+    if bookOpen then
         if key == "down" then
             selectedIndex = math.min(selectedIndex + 1, #allItems)
         elseif key == "up" then
@@ -207,7 +204,7 @@ function inv.keypressed(key)
 end
 
 -- function inv.mousepressed(x, y, button)
---     if not inventoryOpen or button ~= 1 then return end
+--     if not bookOpen or button ~= 1 then return end
 
 --     local bgX, bgY, scale = getTransform()
 --     local leftX = bgX + baseLayout.leftPage.startX * scale
@@ -226,7 +223,7 @@ end
 
 function inv.draw(myInv)
     love.graphics.setDefaultFilter("nearest", "nearest")
-    if not inventoryOpen then return end
+    if not bookOpen then return end
 
     local bgX, bgY, scale, invW, invH = getTransform()
     updateFonts(scale)
@@ -334,6 +331,10 @@ function inv.draw(myInv)
     end
 
     love.graphics.setColor(1, 1, 1, 1)
+end
+
+function inv.draw(myInv, boolChest)
+    myInv = boolChest
 end
 
 return inv

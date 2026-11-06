@@ -105,11 +105,42 @@ function love.load()
         end
     end
 
+    chests = {}
+    if gameMap.layers["ChestsObj"] then
+        for i, obj in pairs(gameMap.layers["ChestsObj"].objects) do
+            local chest = {
+                x = obj.x, y = obj.y,
+                w = obj.width, h = obj.height,
+                inventory = inv.new(math.huge, math.huge)
+            }
+            chest.collider = world:newRectangleCollider(obj.x, obj.y, obj.width/1.1, obj.height/1.1)
+            chest.collider:setType('static')
+            table.insert(chests, chest)
+        end
+    end
+
     inv.load()
 end
 
+local function nearestChest(range)
+    for _, c in ipairs(chests) do
+        local dx = (c.x + c.w/2) - player.x
+        local dy = (c.y + c.h/2) - player.y
+        if math.sqrt(dx*dx + dy*dy) < range then 
+            return c 
+            end
+    end
+end
+
 function love.keypressed(key)
-    inv.keypressed(key)
+    if key == "tab" then
+        inv.keypressed(key)
+    elseif key == "e" then
+        local c = nearestChest(24)
+        if c then
+            inv.openChest(c.inventory)
+        end
+    end
 end
 
 function love.update(dt)
@@ -180,7 +211,7 @@ function love.draw()
         gameMap:drawLayer(gameMap.layers["Base Layer"])
         gameMap:drawLayer(gameMap.layers["Height 1"])
         gameMap:drawLayer(gameMap.layers["Test"])
-        gameMap:drawLayer(gameMap.layers["Test2"])
+        gameMap:drawLayer(gameMap.layers["Chests"])
         player.anim:draw(player.spriteSheet, player.x, player.y, nil, 1, 1, 8, 14)
         gameMap:drawLayer(gameMap.layers["Height 2"])
     cam:detach()
