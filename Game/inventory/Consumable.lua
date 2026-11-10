@@ -1,4 +1,4 @@
-local Item = require "Item"
+local Item = require "inventory/Item"
 
 local Consumable = {}
 Consumable.__index = Consumable
@@ -17,8 +17,12 @@ function Consumable.new(type, name, base_weight, value, effect)
 end
 
 function Consumable:describe()
-    local printString = "Weight: " .. self.base_weight*self.quantity .. "\nValue: " .. self.value*self.quantity .. "\nEffect: " .. self.effect
+    local printString = "Effect: " .. self.effect .. "\nWeight: " .. self.base_weight*self.quantity .. "kg\nValue: " .. self.value*self.quantity .. "G"
     return printString
+end
+
+function Consumable:displayAfterType(x, y, u, fonts)
+    love.graphics.print("Amount:  " .. self.quantity, x, y + fonts.normal:getHeight() + u)
 end
 
 function Consumable:display()

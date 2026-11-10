@@ -12,7 +12,15 @@ function love.load()
     sti = require "libraries/sti"
     gameMap = sti('maps/test2.lua')
 
-    inv = require "inventory"
+    Inventory = require "inventory/inventory"
+    PlayerInventory = require "inventory/PlayerInventory"
+    ChestInventory = require "inventory/ChestInventory"
+
+    UImanager = require "UI/UImanager"
+    CommonUI = require "UI/CommonUI"
+    BookUI = require "UI/BookUI"
+    ChestUI = require "UI/ChestUI"
+    
 
     player = { x = 50, y = 50, speed = 50 }
     player.collider = world:newBSGRectangleCollider(400, 250, 13, 11, 2.5)
@@ -28,13 +36,15 @@ function love.load()
 
     player.anim = player.animations.left
 
-    player.inventory = inv.new(30, 30)
+    player.inventory = PlayerInventory.new(30, 30)
+
+    c = ChestInventory.new(20)
 
 
 
 
 
-    local Weapon = require "Weapon"
+    local Weapon = require "inventory/Weapon"
     local Sword = Weapon.new({
     type="w_Sword", name = "Knight's Straight Sword", 
     base_weight = 6, 
@@ -44,12 +54,14 @@ function love.load()
     stat_bonuses = {attack=10, defence=1},
     damage_type = "Slashing"
 })
-    player.inventory:add_item(Sword)
+    player.inventory:add_item(Sword, Sword.value)
 
-    local Consumable = require "Consumable"
+    local Consumable = require "inventory/Consumable"
     local potion = Consumable.new("c_Potion", "Great Health Potion", 2, 4, "Heal for 10 HP")
-    player.inventory:add_item(potion)
-    player.inventory:add_item(potion)
+    player.inventory:add_item(potion, potion.value)
+    player.inventory:add_item(potion, potion.value)
+    local potion2 = Consumable.new("c_Potion", "Other Potion", 1, 4, "Something Else")
+    player.inventory:add_item(potion2, potion2.value)
 
     
     local Axe = Weapon.new({
@@ -61,7 +73,7 @@ function love.load()
     stat_bonuses = {attack=16, defence=0},
     damage_type = "Slashing"
 })
-    player.inventory:add_item(Axe)
+    player.inventory:add_item(Axe, Axe.value)
 
 
 
@@ -111,15 +123,16 @@ function love.load()
             local chest = {
                 x = obj.x, y = obj.y,
                 w = obj.width, h = obj.height,
-                inventory = inv.new(math.huge, math.huge)
+                inventory = Inventory.new(math.huge, math.huge)
             }
             chest.collider = world:newRectangleCollider(obj.x, obj.y, obj.width/1.1, obj.height/1.1)
             chest.collider:setType('static')
+            chest.inventory = ChestInventory.new(5)
             table.insert(chests, chest)
         end
     end
 
-    inv.load()
+    BookUI.load()
 end
 
 local function nearestChest(range)
@@ -133,14 +146,12 @@ local function nearestChest(range)
 end
 
 function love.keypressed(key)
-    if key == "tab" then
-        inv.keypressed(key)
-    elseif key == "e" then
-        local c = nearestChest(24)
-        if c then
-            inv.openChest(c.inventory)
-        end
-    end
+    UImanager.keypressed(key)
+    -- elseif key == "e" then
+    --     local c = nearestChest(24)
+    --     if c then
+    --         Inventory.openChest(c.inventory)
+    --     end
 end
 
 function love.update(dt)
@@ -216,5 +227,5 @@ function love.draw()
         gameMap:drawLayer(gameMap.layers["Height 2"])
     cam:detach()
 
-    inv.draw(player.inventory)
+    BookUI.draw(player.inventory)
 end

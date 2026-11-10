@@ -1,14 +1,15 @@
-local inv = {}
-inv.__index = inv
+local CommonUI = require "UI/CommonUI"
+
+local BookUI = {}
 local allItems
 
 local inventoryBg
 local selectedIndex = 1
+local inventoryOpen = false
 
-local ui = {
-    bookOpen = false,
-    chest = nil
-}
+function BookUI.load()
+    inventoryBg = love.graphics.newImage("images/inventory.png")
+end
 
 -- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
 local UNIT = 3 -- kleine Abstände waren für 800px gedacht -> x3
@@ -18,31 +19,6 @@ local baseLayout = {
     rightPage = { startX = 1335, startY = 270, width = 810 }
 }
 
-function inv.new(max_weight, money)
-    local instance = {
-        current_weight = 0,
-        max_weight = max_weight,
-        items = {
-            items = {},
-            equipment = {},
-            weapons = {},
-            armor = {},
-            consumables = {}
-        },
-        money = money
-    }
-    setmetatable(instance, inv)
-    return instance
-end
-
-local function find_index(item, list)
-    for i, v in ipairs(list) do
-        if v == item then
-            return i
-        end
-    end
-    return nil
-end
 
 local function getAllItems(inventory)
     local catOrder = {"items", "equipment", "weapons", "armor", "consumables"}
@@ -55,148 +31,28 @@ local function getAllItems(inventory)
     return items
 end
 
-function inv:add_item(item, cost)
-    local prefix = string.sub(item.type, 1, 2)
-
-    if item.base_weight + self.current_weight > self.max_weight then
-        print("Item is too heavy to add to inventory")
-        return
-    end
-    if self.money < cost then
-        print("Item is too expensive, sell other items first!")
-        return
-    end
-
-    if prefix == "c_" then
-        for i=1,#self.items.consumables do
-            if self.items.consumables[i].type == item.type then
-                self.items.consumables[i] = self.items.consumables[i] + item
-
-                self.current_weight = self.current_weight + item.base_weight
-                self.money = self.money - cost
-
-                return
-            end
-        end
-        table.insert(self.items.consumables, item)
-        self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - cost
-
-        
-    elseif prefix == "i_" then
-        table.insert(self.items.items, item)
-        self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - cost
-
-    elseif prefix == "e_" then
-        table.insert(self.items.equipment, item)
-        self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - cost
-
-    elseif prefix == "w_" then
-        table.insert(self.items.weapons, item)
-        self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - cost
-
-    elseif prefix == "a_" then
-        table.insert(self.items.armor, item)
-        self.current_weight = self.current_weight + item.base_weight
-        self.money = self.money - cost
-    end
-end
-
-function inv:remove_item(item, cost)
-    local prefix = string.sub(item.type, 1, 2)
-
-    if prefix == "c_" then
-        local i = find_index(item, self.items.consumables)
-        self.items.consumables[i] = self.items.consumables[i] - 1
-        if self.items.consumables[i].quantity <= 0 then
-            table.remove(self.items.consumables, i)
-        end
-
-        self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + cost
-        
-        return
-
-    elseif prefix == "i_" then
-        local i = find_index(item, self.items.items)
-        table.remove(self.items.items, i)
-        self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + cost
-
-    elseif prefix == "e_" then
-        local i = find_index(item, self.items.equipment)
-        table.remove(self.items.equipment, i)
-        self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + cost
-
-    elseif prefix == "w_" then
-        local i = find_index(item, self.items.weapons)
-        table.remove(self.items.weapons, i)
-        self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + cost
-
-    elseif prefix == "a_" then
-        local i = find_index(item, self.items.armor)
-        table.remove(self.items.armor, i)
-        self.current_weight = self.current_weight - item.base_weight
-        self.money = self.money + cost
-    end
-end
-
 
 -- Schriftgrößen in Originalbild-Pixeln
 local baseFontSize = { normal = 14 * UNIT, title = 20 * UNIT }
 
-local icons = {
-    { name = "Knight's Straight Sword", icon = "images/icons/KnightsStraightSword.png" },
-    { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},
-    { name = "Executioner's Axe", icon = "images/icons/ExecutionersAxe.png"}
-}
+local icons = CommonUI.icons
 
-local fonts = {}
-local lastScale = nil
+local fonts = CommonUI.fonts
 
-local function updateFonts(scale)
-    if scale == lastScale then return end
-    lastScale = scale
-    for name, size in pairs(baseFontSize) do
-        local f = love.graphics.newFont(math.max(8, math.floor(size * scale + 0.5)))
-        f:setFilter("linear", "linear")
-        fonts[name] = f
-    end
+
+function BookUI.isOpen()
+    return inventoryOpen
 end
 
-function inv.load()
-    inventoryBg = love.graphics.newImage("images/inventory.png")
+function BookUI.toggle()
+    inventoryOpen = not inventoryOpen
 end
 
-function inv.isOpen()
-    return bookOpen
-end
 
-local function getTransform()
-    local winW, winH = love.graphics.getWidth(), love.graphics.getHeight()
-    local imgW, imgH = inventoryBg:getWidth(), inventoryBg:getHeight()
-
-    local scale = (winH * 0.85) / imgH
-    local bgX = math.floor((winW - imgW * scale) / 2)
-    local bgY = math.floor((winH - imgH * scale) / 2)
-    local w, h = imgW * scale, imgH * scale
-
-    return bgX, bgY, scale, w, h
-end
-
-function inv.keypressed(key)
-    if key == "tab" then
-        bookOpen = not bookOpen
-    end
-
-    if bookOpen then
+function BookUI.keypressed(key)
+    if inventoryOpen then
         if key == "down" then
-            selectedIndex = math.min(selectedIndex + 1, #allItems)
+            selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
         elseif key == "up" then
             selectedIndex = math.max(selectedIndex - 1, 1)
         end
@@ -204,7 +60,7 @@ function inv.keypressed(key)
 end
 
 -- function inv.mousepressed(x, y, button)
---     if not bookOpen or button ~= 1 then return end
+--     if not inventoryOpen or button ~= 1 then return end
 
 --     local bgX, bgY, scale = getTransform()
 --     local leftX = bgX + baseLayout.leftPage.startX * scale
@@ -221,12 +77,12 @@ end
 --     end
 -- end
 
-function inv.draw(myInv)
+function BookUI.draw(myInv)
+    if not inventoryOpen then return end
     love.graphics.setDefaultFilter("nearest", "nearest")
-    if not bookOpen then return end
 
-    local bgX, bgY, scale, invW, invH = getTransform()
-    updateFonts(scale)
+    local bgX, bgY, scale, invW, invH = CommonUI.getTransform(inventoryBg)
+    CommonUI.updateFonts(scale, baseFontSize)
 
     allItems = getAllItems(myInv)
 
@@ -333,8 +189,5 @@ function inv.draw(myInv)
     love.graphics.setColor(1, 1, 1, 1)
 end
 
-function inv.draw(myInv, boolChest)
-    myInv = boolChest
-end
 
-return inv
+return BookUI
