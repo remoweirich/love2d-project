@@ -37,7 +37,7 @@ function inv.new(max_weight, money)
     return instance
 end
 
-local function find_index(item, list)
+function inv.find_index(item, list)
     for i, v in ipairs(list) do
         if v == item then
             return i

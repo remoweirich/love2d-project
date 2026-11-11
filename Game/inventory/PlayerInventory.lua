@@ -1,4 +1,5 @@
 local Inventory = require "inventory/inventory"
+local Consumable = require "inventory/Consumable"
 
 local PlayerInventory = {}
 PlayerInventory.__index = PlayerInventory
@@ -26,12 +27,10 @@ function PlayerInventory:add_item(item, cost)
     local prefix = string.sub(item.type, 1, 2)
 
     if item.base_weight + self.current_weight > self.max_weight then
-        print("Item is too heavy to add to inventory")
-        return
+        return false, "Item is too heavy to add to inventory"
     end
     if self.money < cost then
-        print("Item is too expensive, sell other items first!")
-        return
+        return false, "Item is too expensive, sell other items first!"
     end
 
     if prefix == "c_" then
@@ -42,10 +41,11 @@ function PlayerInventory:add_item(item, cost)
                 self.current_weight = self.current_weight + item.base_weight
                 self.money = self.money - cost
 
-                return
+                return true
             end
         end
-        table.insert(self.items.consumables, item)
+        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect)
+        table.insert(self.items.consumables, newPotion)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
 
@@ -70,13 +70,15 @@ function PlayerInventory:add_item(item, cost)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
     end
+
+    return true
 end
 
 function PlayerInventory:remove_item(item, cost)
     local prefix = string.sub(item.type, 1, 2)
 
     if prefix == "c_" then
-        local i = inv.find_index(item, self.items.consumables)
+        local i = Inventory.find_index(item, self.items.consumables)
         self.items.consumables[i] = self.items.consumables[i] - 1
         if self.items.consumables[i].quantity <= 0 then
             table.remove(self.items.consumables, i)
@@ -88,25 +90,25 @@ function PlayerInventory:remove_item(item, cost)
         return
 
     elseif prefix == "i_" then
-        local i = inv.find_index(item, self.items.items)
+        local i = Inventory.find_index(item, self.items.items)
         table.remove(self.items.items, i)
         self.current_weight = self.current_weight - item.base_weight
         self.money = self.money + cost
 
     elseif prefix == "e_" then
-        local i = inv.find_index(item, self.items.equipment)
+        local i = Inventory.find_index(item, self.items.equipment)
         table.remove(self.items.equipment, i)
         self.current_weight = self.current_weight - item.base_weight
         self.money = self.money + cost
 
     elseif prefix == "w_" then
-        local i = inv.find_index(item, self.items.weapons)
+        local i = Inventory.find_index(item, self.items.weapons)
         table.remove(self.items.weapons, i)
         self.current_weight = self.current_weight - item.base_weight
         self.money = self.money + cost
 
     elseif prefix == "a_" then
-        local i = inv.find_index(item, self.items.armor)
+        local i = Inventory.find_index(item, self.items.armor)
         table.remove(self.items.armor, i)
         self.current_weight = self.current_weight - item.base_weight
         self.money = self.money + cost

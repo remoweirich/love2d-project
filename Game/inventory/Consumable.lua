@@ -32,7 +32,7 @@ end
 
 Consumable.__add = function(c1, c2)
     if (c1.type == c2.type) and (c1.name == c2.name) then
-        local quantity = c1.quantity + c2.quantity
+        local quantity = c1.quantity + 1
         local new = Consumable.new(c1.type, c1.name, c1.base_weight, c1.value, c1.effect)
         new.quantity = quantity
         return new

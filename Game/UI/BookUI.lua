@@ -3,6 +3,13 @@ local CommonUI = require "UI/CommonUI"
 local BookUI = {}
 local allItems
 
+local confirm = nil
+local message = nil
+
+function BookUI.hasPopup()
+    return confirm ~= nil
+end
+
 local inventoryBg
 local selectedIndex = 1
 local inventoryOpen = false
@@ -49,13 +56,46 @@ function BookUI.toggle()
 end
 
 
-function BookUI.keypressed(key)
+function BookUI.keypressed(key, playerInv, chest)
     if inventoryOpen then
+        if ChestUI.isOpen(chest) then
+            if confirm then
+                if key == "left" or key == "right" then
+                    confirm.choice = (confirm.choice == 1) and 2 or 1
+                elseif key == "return" or key == "kpenter" then
+                    if confirm.choice == 1 then
+                        local ok, msg = chest.inventory:add_item(confirm.item)
+                        if ok then   -- 0 = kostenlos, passe das an deine Signatur an
+                            playerInv:remove_item(confirm.item, 0)
+                        else
+                            message = { text = msg, time = 2} 
+                        end
+                    end
+                    confirm = nil
+                elseif key == "escape" then
+                    confirm = nil
+                end
+                return
+            end
+            if key == "return" or key == "kpenter" then
+            local item = allItems[selectedIndex]
+            if item then confirm = { item = item, choice = 1 } end
+            end
+        end
         if key == "down" then
             selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
         elseif key == "up" then
             selectedIndex = math.max(selectedIndex - 1, 1)
         end
+
+        
+    end
+end
+
+function BookUI.update(dt)
+    if message then
+        message.time = message.time - dt
+        if message.time <= 0 then message = nil end
     end
 end
 
@@ -186,6 +226,57 @@ function BookUI.draw(myInv)
         love.graphics.printf(sel:describe(), rightX, descY, rightW, "left")
     end
 
+    ---------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------
+    -- transfer
+    ---------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------
+
+
+    if confirm then
+        local w, h = 800 * scale, 400 * scale
+        local x = bgX + (invW - w) / 2
+        local y = bgY + (invH - h) / 2
+
+        love.graphics.setColor(0, 0, 0, 0.5)
+        love.graphics.rectangle("fill", bgX, bgY, invW, invH)       -- Hintergrund abdunkeln
+
+        love.graphics.setColor(0.25, 0.17, 0.1, 1)
+        love.graphics.rectangle("fill", x, y, w, h)
+        love.graphics.setColor(0.8, 0.65, 0.3, 1)
+        love.graphics.rectangle("line", x, y, w, h)
+
+        love.graphics.setFont(fonts.normal)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.printf("Move " .. confirm.item.name .. " to chest?", x, y + 30*u, w, "center")
+
+        local labels = { "Yes", "No" }
+        for i, label in ipairs(labels) do
+            local bx = x + w * (i == 1 and 0.15 or 0.55)
+            local bw, bh = w * 0.3, 70 * scale
+            local by = y + h - bh - 30*u
+            if confirm.choice == i then
+                love.graphics.setColor(0.8, 0.65, 0.3, 0.6)
+                love.graphics.rectangle("fill", bx, by, bw, bh)
+            end
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.rectangle("line", bx, by, bw, bh)
+            love.graphics.printf(label, bx, by + (bh - fonts.normal:getHeight())/2, bw, "center")
+        end
+    end
+
+    if message then
+        love.graphics.setFont(fonts.normal)
+        local w = fonts.normal:getWidth(message.text) + 20 * u
+        local h = fonts.normal:getHeight() + 10 * u
+        local x = bgX + (invW - w) / 2
+        local y = bgY + invH - h - 20 * u
+
+        love.graphics.setColor(0, 0, 0, 0.8)
+        love.graphics.rectangle("fill", x, y, w, h)
+        love.graphics.setColor(1, 0.4, 0.4, 1)
+        love.graphics.print(message.text, x + 10 * u, y + 5 * u)
+    end
     love.graphics.setColor(1, 1, 1, 1)
 end
 

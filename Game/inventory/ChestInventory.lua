@@ -1,4 +1,5 @@
 local Inventory = require "inventory/inventory"
+local Consumable = require "inventory/Consumable"
 
 local ChestInventory = {}
 ChestInventory.__index = ChestInventory
@@ -16,19 +17,19 @@ function ChestInventory.new(slots)
             consumables = {}
         }
     }
-    ChestUI.putChest(instance)
+
     setmetatable(instance, ChestInventory)
     return instance
 end
 
 
 
-function ChestInventory:add_item(item)
+function ChestInventory:add_item(item)  
     local prefix = string.sub(item.type, 1, 2)
 
     if self.slotsUsed + 1 > self.slots then
         print("Chest is full")
-        return
+        return false
     end
 
     if prefix == "c_" then
@@ -36,10 +37,11 @@ function ChestInventory:add_item(item)
             if (self.items.consumables[i].type == item.type) and (self.items.consumables[i].name == item.name) then
                 self.items.consumables[i] = self.items.consumables[i] + item
 
-                return
+                return true
             end
         end
-        table.insert(self.items.consumables, item)
+        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect)
+        table.insert(self.items.consumables, newPotion)
         self.slotsUsed = self.slotsUsed + 1
         
     elseif prefix == "i_" then
@@ -58,6 +60,8 @@ function ChestInventory:add_item(item)
         table.insert(self.items.armor, item)
         self.slotsUsed = self.slotsUsed + 1
     end
+
+    return true
 end
 
 
@@ -66,34 +70,32 @@ function ChestInventory:remove_item(item)
     local prefix = string.sub(item.type, 1, 2)
 
     if prefix == "c_" then
-        local i = inv.find_index(item, self.items.consumables)
+        local i = Inventory.find_index(item, self.items.consumables)
         self.items.consumables[i] = self.items.consumables[i] - 1
         if self.items.consumables[i].quantity <= 0 then
             table.remove(self.items.consumables, i)
             self.slotsUsed = self.slotsUsed - 1
         end
-
-        self.slotsUsed = self.slotsUsed - 1
         
         return
 
     elseif prefix == "i_" then
-        local i = inv.find_index(item, self.items.items)
+        local i = Inventory.find_index(item, self.items.items)
         table.remove(self.items.items, i)
         self.slotsUsed = self.slotsUsed - 1
 
     elseif prefix == "e_" then
-        local i = inv.find_index(item, self.items.equipment)
+        local i = Inventory.find_index(item, self.items.equipment)
         table.remove(self.items.equipment, i)
         self.slotsUsed = self.slotsUsed - 1
 
     elseif prefix == "w_" then
-        local i = inv.find_index(item, self.items.weapons)
+        local i = Inventory.find_index(item, self.items.weapons)
         table.remove(self.items.weapons, i)
         self.slotsUsed = self.slotsUsed - 1
 
     elseif prefix == "a_" then
-        local i = inv.find_index(item, self.items.armor)
+        local i = Inventory.find_index(item, self.items.armor)
         table.remove(self.items.armor, i)
         self.slotsUsed = self.slotsUsed - 1
     end
