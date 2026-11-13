@@ -1,3 +1,6 @@
+local ShopUI = require "UI/ShopUI"
+local ChestUI = require "UI/ChestUI"
+
 local InteractableUI = {}
 
 

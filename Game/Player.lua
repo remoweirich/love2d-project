@@ -1,3 +1,6 @@
+
+local anim8 = require "libraries.anim8"
+
 local Player = {}
 Player.__index = Player
 

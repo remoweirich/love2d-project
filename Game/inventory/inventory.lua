@@ -90,7 +90,7 @@ function inv:remove_item(item)
     local prefix = string.sub(item.type, 1, 2)
 
     if prefix == "c_" then
-        local i = find_index(item, self.items.consumables)
+        local i = inv.find_index(item, self.items.consumables)
         self.items.consumables[i] = self.items.consumables[i] - 1
         if self.items.consumables[i].quantity <= 0 then
             table.remove(self.items.consumables, i)
@@ -99,19 +99,19 @@ function inv:remove_item(item)
         return
 
     elseif prefix == "i_" then
-        local i = find_index(item, self.items.items)
+        local i = inv.find_index(item, self.items.items)
         table.remove(self.items.items, i)
 
     elseif prefix == "e_" then
-        local i = find_index(item, self.items.equipment)
+        local i = inv.find_index(item, self.items.equipment)
         table.remove(self.items.equipment, i)
 
     elseif prefix == "w_" then
-        local i = find_index(item, self.items.weapons)
+        local i = inv.find_index(item, self.items.weapons)
         table.remove(self.items.weapons, i)
 
     elseif prefix == "a_" then
-        local i = find_index(item, self.items.armor)
+        local i = inv.find_index(item, self.items.armor)
         table.remove(self.items.armor, i)
     end
 end

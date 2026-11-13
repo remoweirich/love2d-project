@@ -1,5 +1,4 @@
 local CommonUI = require "UI/CommonUI"
-local InteractableUI = require "UI/InteractableUI"
 
 local ShopUI = {}
 local allItems
@@ -57,6 +56,7 @@ end
 
 
 function ShopUI.keypressed(key, shop, person)
+    local bought = false
     if shop.inventoryOpen then
         if confirm then
             if key == "left" or key == "right" then
@@ -67,7 +67,7 @@ function ShopUI.keypressed(key, shop, person)
                     local ok, msg = person.inventory:add_item(confirm.item, cost)
                     if ok then 
                         shop.inventory:remove_item(confirm.item, cost)
-                        UImanager.setBoughtSomething(true)
+                        bought = true
                     else
                         message = { text = msg, time = 2} 
                     end
@@ -76,7 +76,7 @@ function ShopUI.keypressed(key, shop, person)
             elseif key == "escape" then
                 confirm = nil
             end
-            return
+            return bought
         end
         if key == "down" then
             selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
@@ -89,7 +89,7 @@ function ShopUI.keypressed(key, shop, person)
         end
 
     end
-
+    return bought
     
 end
 

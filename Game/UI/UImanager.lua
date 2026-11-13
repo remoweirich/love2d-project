@@ -1,4 +1,5 @@
 local InteractableUI = require "UI/InteractableUI"
+local Utils = require "main-utils"
 
 
 local UImanager = {}
@@ -14,7 +15,7 @@ function UImanager.startDialog(onFinish)
 end
 
 local function nearestInteractable(range)
-    for _, i in ipairs(Interactables) do
+    for _, i in ipairs(Utils.getInteractables()) do
         local w
         if i.type == "Player" then
             w = i.collider.w
