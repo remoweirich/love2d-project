@@ -16,7 +16,7 @@ local selectedIndex = 1
 
 
 function ChestUI.load()
-    inventoryBg = love.graphics.newImage("images/chestInv.png")
+    inventoryBg = love.graphics.newImage("images/chestInv_clean.png")
 end
 
 -- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
