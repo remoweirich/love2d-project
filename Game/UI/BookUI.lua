@@ -1,4 +1,5 @@
 local CommonUI = require "UI/CommonUI"
+local InteractableUI = require "UI/InteractableUI"
 
 local BookUI = {}
 local allItems
@@ -12,7 +13,6 @@ end
 
 local inventoryBg
 local selectedIndex = 1
-local inventoryOpen = false
 
 function BookUI.load()
     inventoryBg = love.graphics.newImage("images/inventory.png")
@@ -47,26 +47,30 @@ local icons = CommonUI.icons
 local fonts = CommonUI.fonts
 
 
-function BookUI.isOpen()
-    return inventoryOpen
+function BookUI.isOpen(person)
+    return person.inventoryOpen
 end
 
-function BookUI.toggle()
-    inventoryOpen = not inventoryOpen
+function BookUI.toggle(person)
+    person.inventoryOpen = not person.inventoryOpen
 end
 
 
-function BookUI.keypressed(key, playerInv, chest)
-    if inventoryOpen then
-        if ChestUI.isOpen(chest) then
+function BookUI.keypressed(key, person, interactable)
+    if person.inventoryOpen then
+        if InteractableUI.isOpen(interactable) then
             if confirm then
                 if key == "left" or key == "right" then
                     confirm.choice = (confirm.choice == 1) and 2 or 1
                 elseif key == "return" or key == "kpenter" then
                     if confirm.choice == 1 then
-                        local ok, msg = chest.inventory:add_item(confirm.item)
-                        if ok then   -- 0 = kostenlos, passe das an deine Signatur an
-                            playerInv:remove_item(confirm.item, 0)
+                        local cost = 0
+                        if interactable.type == "Player" then
+                            cost = confirm.item.value
+                        end
+                        local ok, msg = interactable.inventory:add_item(confirm.item, cost)
+                        if ok then 
+                            person.inventory:remove_item(confirm.item, cost)
                         else
                             message = { text = msg, time = 2} 
                         end
@@ -80,14 +84,19 @@ function BookUI.keypressed(key, playerInv, chest)
             if key == "return" or key == "kpenter" then
             local item = allItems[selectedIndex]
             if item then confirm = { item = item, choice = 1 } end
+            if interactable.type == "Player" and confirm then
+                confirm.question = "Sell " .. confirm.item.name .. " for " .. confirm.item.value .. " Gold?"
+            elseif interactable.type == "Chest" and confirm then
+                confirm.question = "Move " .. confirm.item.name .. " to chest?"
             end
+        end
+
         end
         if key == "down" then
             selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
         elseif key == "up" then
             selectedIndex = math.max(selectedIndex - 1, 1)
         end
-
         
     end
 end
@@ -117,14 +126,14 @@ end
 --     end
 -- end
 
-function BookUI.draw(myInv)
-    if not inventoryOpen then return end
+function BookUI.draw(person)
+    if not person.inventoryOpen then return end
     love.graphics.setDefaultFilter("nearest", "nearest")
 
     local bgX, bgY, scale, invW, invH = CommonUI.getTransform(inventoryBg)
     CommonUI.updateFonts(scale, baseFontSize)
 
-    allItems = getAllItems(myInv)
+    allItems = getAllItems(person.inventory)
 
     -- "u" = eine Design-Einheit in Bildschirmpixeln (für kleine Abstände)
     local u = UNIT * scale
@@ -183,8 +192,8 @@ function BookUI.draw(myInv)
 
     love.graphics.setFont(fonts.normal)
     love.graphics.setColor(0.2, 0.15, 0.1, 1)
-    love.graphics.print("Weight: " .. myInv.current_weight .. "/" .. myInv.max_weight, rightX, rightY - fonts.normal:getHeight() - 8 * u)
-    local currentGold = myInv.money
+    love.graphics.print("Weight: " .. person.inventory.current_weight .. "/" .. person.inventory.max_weight, rightX, rightY - fonts.normal:getHeight() - 8 * u)
+    local currentGold = person.inventory.money
     local wealthString = "Wealth: " .. tostring(currentGold) .. "G"
     local padLeft = leftX - bgX
     love.graphics.print(wealthString, bgX + invW - padLeft - fonts.normal:getWidth(wealthString), rightY - fonts.normal:getHeight() - 8 * u)
@@ -248,7 +257,7 @@ function BookUI.draw(myInv)
 
         love.graphics.setFont(fonts.normal)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf("Move " .. confirm.item.name .. " to chest?", x, y + 30*u, w, "center")
+        love.graphics.printf(confirm.question, x, y + 30*u, w, "center")
 
         local labels = { "Yes", "No" }
         for i, label in ipairs(labels) do

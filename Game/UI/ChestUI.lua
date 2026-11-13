@@ -67,7 +67,7 @@ function ChestUI.toggle(chest)
 end
 
 
-function ChestUI.keypressed(key, chest, playerInv)
+function ChestUI.keypressed(key, chest, person)
     local cols = baseLayout.body.cols
     local maxSlot = chest.inventory.slots
     if chest.inventoryOpen then
@@ -77,7 +77,7 @@ function ChestUI.keypressed(key, chest, playerInv)
                 confirm.choice = (confirm.choice == 1) and 2 or 1
             elseif key == "return" or key == "kpenter" then
                 if confirm.choice == 1 then
-                    local ok, msg = playerInv:add_item(confirm.item, 0)
+                    local ok, msg = person.inventory:add_item(confirm.item, 0)
                     if ok then   -- 0 = kostenlos, passe das an deine Signatur an
                         chest.inventory:remove_item(confirm.item)
                     else

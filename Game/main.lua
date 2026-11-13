@@ -13,6 +13,8 @@ function love.load()
 
     sti = require "libraries/sti"
     gameMap = sti('maps/test2.lua')
+
+    Interactables = {}
     
     Inventory = require "inventory/inventory"
     PlayerInventory = require "inventory/PlayerInventory"
@@ -22,7 +24,11 @@ function love.load()
     CommonUI = require "UI/CommonUI"
     BookUI = require "UI/BookUI"
     ChestUI = require "UI/ChestUI"
+    ShopUI = require "UI/ShopUI"
     
+    Dialog = require "Dialog"
+
+
     Player = require "Player"
     
     local playerSpriteSheetPath = "images/character_14_frame16x20.png"
@@ -35,7 +41,11 @@ function love.load()
     ShopKeeper.inventory = PlayerInventory.new(100, 50)
     ShopKeeper.anim:gotoFrame(2)
     ShopKeeper.collider:setType("static")
-    
+    ShopKeeper.haveMet = false
+    ShopKeeper.dialog = Dialog.shopkeeperDialog
+
+
+    table.insert(Interactables, ShopKeeper)
     
     
     
@@ -69,8 +79,6 @@ function love.load()
         damage_type = "Slashing"
     })
     player.inventory:add_item(Axe, Axe.value)
-    
-    
     
     
     
@@ -124,7 +132,9 @@ function love.load()
             chest.collider:setType('static')
             chest.inventory = ChestInventory.new(8)
             chest.inventoryOpen = false
+            chest.type = "Chest"
             table.insert(Chests, chest)
+            table.insert(Interactables, chest)
         end
     end
     
@@ -134,6 +144,8 @@ function love.load()
     
     BookUI.load()
     ChestUI.load()
+    ShopUI.load()
+    Dialog.load()
 end
 
 function love.keypressed(key)
@@ -208,6 +220,8 @@ function love.update(dt)
         end
     end
     ChestUI.update(dt)
+    UImanager.update(dt)
+    Dialog.update(dt)
 end
 
 function love.draw()
@@ -225,6 +239,15 @@ function love.draw()
     for _, chest in ipairs(Chests) do
         ChestUI.draw(chest)
     end
-    BookUI.draw(ShopKeeper.inventory)
-    BookUI.draw(player.inventory)
+    if player.inventoryOpen then
+        BookUI.draw(player)
+    end
+    if ShopKeeper.inventoryOpen then
+        ShopUI.draw(ShopKeeper)
+    end
+    if ShopKeeper.inventoryOpen and player.inventoryOpen then
+        ShopUI.draw(ShopKeeper)
+        BookUI.draw(player)
+    end
+    Dialog.draw()
 end
