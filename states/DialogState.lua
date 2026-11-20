@@ -27,8 +27,8 @@ function DialogState.keypressed(key)
     if key == "e" or key == "return" then
         if d and not d.done then DialogManager:complete()
         else DialogManager:pop() end
-    elseif key == "down" then DialogManager:changeOption(1)
-        elseif key == "up"   then DialogManager:changeOption(-1)
+    elseif key == "down" or key == "s" then DialogManager:changeOption(1)
+        elseif key == "up" or key == "w"  then DialogManager:changeOption(-1)
     end
 end
 
