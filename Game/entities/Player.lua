@@ -1,20 +1,23 @@
-
 local anim8 = require "libraries.anim8"
+
+local Entity = require "entities/Entity"
+local PlayerInventory = require "inventory/PlayerInventory"
 
 local Player = {}
 Player.__index = Player
 
+setmetatable(Player, { __index = Entity })
+
 Player.type = "Player"
 
-function Player.new(x, y, speed, imagePath)
-    local instance = {
-        x = x, y = y,
-        speed = speed,
-        collider = world:newBSGRectangleCollider(x, y, 13, 11, 2.5),
-        spriteSheet = love.graphics.newImage(imagePath),
-        animations = {},
-        inventoryOpen = false
-    }
+function Player.new(params, max_weight, gold)
+    local instance = Entity.new(params)
+    instance.collider = world:newBSGRectangleCollider(params.x, params.y, 13, 11, 2.5)
+    instance.spriteSheet = love.graphics.newImage(params.imagePath)
+    instance.animations = {}
+    instance.inventoryOpen = false
+    instance.inventory = PlayerInventory.new(max_weight, gold)
+
     instance.grid = anim8.newGrid( 16, 20, instance.spriteSheet:getWidth(), instance.spriteSheet:getHeight() )
     instance.collider:setFixedRotation(true)
     instance.collider.w = 13

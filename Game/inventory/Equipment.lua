@@ -38,11 +38,15 @@ function Equipment:displayAfterType(x, y, u, fonts)
 end
 
 function Equipment:use()
-    self.durability = self.durability - 1
+    local broken = false
+    local possibleDamage = {1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 6, 6, 7, 8, 9, 10}
+    local num = love.math.random(1, #possibleDamage)
+    self.durability = self.durability - num
     -- maybe do debuff if durability lower than some number, also maybe name change
     if self.durability <= 0 then
-        print(self.name .. "broke..")
+         broken = true
     end
+    return broken
 end
 
 function Equipment:repair()

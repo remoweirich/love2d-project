@@ -1,6 +1,7 @@
 local State = require "states/State"
 local DialogState = require "states/DialogState"
 local BookState = require "states/BookState"
+local CombatState = require "states/CombatState"
 
 local Utils = require "main-utils"
 
@@ -9,9 +10,10 @@ local sti = require "libraries/sti"
 local camera = require 'libraries/camera'
 local cam = camera()
 
-local ItemData = require "ItemData"
+local ItemData = require "data/ItemData"
+local EnemyData = require "data/EnemyData"
 
-local Player = require "Player"
+local Player = require "entities/Player"
 
 local Inventory = require "inventory/inventory"
 local PlayerInventory = require "inventory/PlayerInventory"
@@ -25,12 +27,18 @@ local Explore = { overlay = true}
 local map
 local walls, plants, bushes, stones, chests = {}, {}, {}, {}, {}
 local interactables = {}
+local enemies = {}
+local npcs = {}
+
+local TRIGGER_RANGE = 50
 
 function Explore.enter(mapPath, spawnX, spawnY)
     mapPath = mapPath or "maps/test2.lua"
     map = sti(mapPath)
 
     interactables = {}
+    enemies = {}
+    npcs = {}
     walls, plants, bushes, stones, chests = {}, {}, {}, {}, {}
 
     player.collider:setPosition(spawnX or 350, spawnY or 250)
@@ -85,23 +93,65 @@ function Explore.enter(mapPath, spawnX, spawnY)
         end
     end
 
-    if mapPath == "maps/test2.lua" then
-        local shopKeeperSpriteSheetPath = "images/character_1_frame16x20.png"
-        ShopKeeper = Player.new(400, 300, 0, shopKeeperSpriteSheetPath)
-        ShopKeeper.inventory = PlayerInventory.new(100, 50)
-        ShopKeeper.anim:gotoFrame(2)
-        ShopKeeper.collider:setType("static")
-        ShopKeeper.haveMet = false
-        ShopKeeper.dialog = Dialog.shopkeeperDialog
-
-
-        table.insert(interactables, ShopKeeper)
+    if map.layers["EnemyObj"] then
+        for i, obj in pairs(map.layers["EnemyObj"].objects) do
+            local key = obj.properties.enemyType
+            local enemy = EnemyData.new(key, obj.x, obj.y)
+            table.insert(enemies, enemy)
+        end
     end
 
+    if map.layers["NPC"] then
+        for i, obj in pairs(map.layers["NPC"].objects) do
+            local npcSpriteSheetPath = "images/character_1_frame16x20.png"
+            local npcParams = {
+                x = obj.x, y = obj.y, 
+                hp = 100, speed = 0,
+                imagePath = npcSpriteSheetPath
+            }
+            if obj.properties.npcType == "Shop" then
+                local npc  = Player.new(npcParams, 100, 50) 
+                npc.name = obj.properties.npcName
+                npc.anim:gotoFrame(2)
+                npc.collider:setType("static")
+                npc.haveMet = false
+                npc.dialog = Dialog.shopkeeperDialog
 
-    chests[1].inventory:add_item(ItemData.axe)
-    chests[1].inventory:add_item(ItemData.potion)
-    chests[1].inventory:add_item(ItemData.potion)
+                table.insert(interactables, npc)
+                table.insert(npcs, npc)
+            end
+            
+        end
+    end
+
+    -- if mapPath == "maps/test2.lua" then
+    --     local shopKeeperSpriteSheetPath = "images/character_1_frame16x20.png"
+    --     local shopKeeperParams = {
+    --         x = 400, y = 300, 
+    --         hp = 100, speed = 0,
+    --         imagePath = shopKeeperSpriteSheetPath
+    --     }
+
+    --     ShopKeeper = Player.new(shopKeeperParams, 100, 50)
+    --     ShopKeeper.anim:gotoFrame(2)
+    --     ShopKeeper.collider:setType("static")
+    --     ShopKeeper.haveMet = false
+    --     ShopKeeper.dialog = Dialog.shopkeeperDialog
+
+
+    --     table.insert(interactables, ShopKeeper)
+    -- end
+
+    local sword = ItemData.new("sword")
+    local potion = ItemData.new("potion")
+    local potion2 = ItemData.new("potion2")
+    local axe = ItemData.new("axe")
+
+    chests[1].inventory:add_item(axe)
+    chests[1].inventory:add_item(axe)
+    chests[1].inventory:add_item(potion)
+    chests[1].inventory:add_item(potion)
+    print("Enemies geladen:", #enemies)
 end
 
 
@@ -111,10 +161,12 @@ function Explore.exit()
     for _, c in ipairs(bushes) do c:destroy() end
     for _, c in ipairs(stones) do c:destroy() end
     for _, c in ipairs(chests) do c.collider:destroy() end
+    for _, c in ipairs(npcs) do c.collider:destroy() end
     chests = {}
     interactables = {}
-    if ShopKeeper then ShopKeeper.collider:destroy() end
-    ShopKeeper = nil
+    npcs = {}
+    -- if ShopKeeper then ShopKeeper.collider:destroy() end
+    -- ShopKeeper = nil
 end
 
 
@@ -160,8 +212,26 @@ function Explore.update(dt)
 
     player.anim:update(dt)
 
-    ShopKeeper.x = ShopKeeper.collider:getX()
-    ShopKeeper.y = ShopKeeper.collider:getY()
+    for _, npc in ipairs(npcs) do
+        npc.x = npc.collider:getX()
+        npc.y = npc.collider:getY()
+    end
+
+    local combatCooldown = 0
+    for i, enemy in ipairs(enemies) do
+        local dx = enemy.x - player.x
+        local dy = enemy.y - player.y
+        if math.sqrt(dx*dx + dy*dy) < TRIGGER_RANGE and combatCooldown == 0 then
+            State.push(CombatState, enemy, function(result)
+                if result == "won" then
+                    table.remove(enemies, i)
+                end
+            end)
+            combatCooldown = 2
+            return
+        end
+    end
+    combatCooldown = combatCooldown - dt
 
 
     cam:lookAt(player.x+16/2, player.y + 20/2)
@@ -194,7 +264,9 @@ function Explore.draw()
         map:drawLayer(map.layers["Test"])
         map:drawLayer(map.layers["Chests"])
         map:drawLayer(map.layers["Dungeon"])
-        ShopKeeper.anim:draw(ShopKeeper.spriteSheet, ShopKeeper.x, ShopKeeper.y, nil, 1, 1, 8, 14)
+        for _, npc in ipairs(npcs) do
+            npc.anim:draw(npc.spriteSheet, npc.x, npc.y, nil, 1, 1, 8, 14)
+        end
         player.anim:draw(player.spriteSheet, player.x, player.y, nil, 1, 1, 8, 14)
         map:drawLayer(map.layers["Height 2"])
     cam:detach()
@@ -213,17 +285,16 @@ function Explore.keypressed(key)
         local i = Utils.nearestInteractable(20, interactables)
         if not i then return end
         if i.haveMet == false then
-            i.dialog.introNotMet()
+            i.dialog.introNotMet(i)
             DialogManager:pop()
             State.push(DialogState, function () State.push(Utils.whichState(i), i) end)
         elseif i.haveMet then
-            i.dialog.introMet()
+            i.dialog.introMet(i)
             DialogManager:pop()
             State.push(DialogState, function () State.push(Utils.whichState(i), i) end)
         else
             State.push(Utils.whichState(i), i)
         end
-
     end
 end
 

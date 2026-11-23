@@ -1,4 +1,7 @@
 local Inventory = require "inventory/inventory"
+local Item = require "inventory/Item"
+local Equipment = require "inventory/Equipment"
+local Weapon = require "inventory/Weapon"
 local Consumable = require "inventory/Consumable"
 
 local PlayerInventory = {}
@@ -51,21 +54,44 @@ function PlayerInventory:add_item(item, cost)
 
         
     elseif prefix == "i_" then
-        table.insert(self.items.items, item)
+        local newItem = Item.new(item.type, item.name, item.base_weight, item.value)
+        table.insert(self.items.items, newItem)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
 
     elseif prefix == "e_" then
-        table.insert(self.items.equipment, item)
+        local params = {
+            type = item.type,
+            name = item.name,
+            base_weight = item.base_weight,
+            value = item.value,
+            durability = item.durability,
+            max_durability = item.max_durability,
+            stat_bonuses = item.stat_bonuses
+        }
+        local newEquipment = Equipment.new(params)
+        table.insert(self.items.equipment, newEquipment)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
 
     elseif prefix == "w_" then
-        table.insert(self.items.weapons, item)
+        local params = {
+            type = item.type,
+            name = item.name,
+            base_weight = item.base_weight,
+            value = item.value,
+            durability = item.durability,
+            max_durability = item.max_durability,
+            stat_bonuses = item.stat_bonuses,
+            damage_type = item.damage_type
+        }
+        local newWeapon = Equipment.new(params)
+        table.insert(self.items.weapons, newWeapon)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
 
     elseif prefix == "a_" then
+        -- still needs to be added
         table.insert(self.items.armor, item)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost

@@ -17,7 +17,7 @@ function ShopState.keypressed(key)
     if key == "e" and not ShopUI.hasPopup() then
         ShopUI.toggle(shop)
         State.pop()
-        shop.dialog.outro(ShopState.boughtSomething)
+        shop.dialog.outro(shop, ShopState.boughtSomething)
         DialogManager:pop()
         State.push(DialogState)
         return

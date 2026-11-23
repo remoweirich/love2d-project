@@ -29,15 +29,15 @@ function Dialog.isRunning()
 end
 
 Dialog.shopkeeperDialog = { 
-    introNotMet = function ()
-        if not ShopKeeper.haveMet then
+    introNotMet = function (shop)
+        if not shop.haveMet then
             DialogManager:push({
-                title = "Shopkeeper Aphelton",
+                title = "Shopkeeper " .. shop.name,
                 text = "Hello there! I haven't seen you around here any time lately."
             })
             DialogManager:push({
-                title = "Shopkeeper Aphelton",
-                text = "Anyway, my name is Aphelton, I'm the shopkeeper around here. What's your name?",
+                title = "Shopkeeper " .. shop.name,
+                text = "Anyway, my name is " .. shop.name ..  ", I'm the shopkeeper around here. What's your name?",
                 options = {
                     {
                         "Don't say your name",
@@ -49,24 +49,24 @@ Dialog.shopkeeperDialog = {
                     }
                 }
             })
-            ShopKeeper.haveMet = true
+            shop.haveMet = true
         end
     end,
-    introMet = function ()
+    introMet = function (shop)
         DialogManager:push({
-            title = "Shopkeeper Aphelton",
+            title = "Shopkeeper " .. shop.name,
             text = Dialog.randomHello()
         })
     end,
-    outro = function (bought)
+    outro = function (shop, bought)
         if bought then
             DialogManager:push({
-                title = "Shopkeeper Aphelton",
+                title = "Shopkeeper " .. shop.name,
                 text = "Thanks for coming, be safe out there!"
             })
         else
             DialogManager:push({
-                title = "Shopkeeper Aphelton",
+                title = "Shopkeeper " .. shop.name,
                 text = "Didn't buy anything? Well you know where to find me if you change your mind"
             })
         end

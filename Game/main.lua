@@ -4,8 +4,7 @@ world = wf.newWorld(0, 0)
 local State = require "states/State"
 local Explore = require "states/Explore"
 
-local ItemData = require "ItemData"
-local PlayerInventory = require "inventory/PlayerInventory"
+local ItemData = require "data/ItemData"
 
 local UImanager = require "UI/UImanager"
 local BookUI = require "UI/BookUI"
@@ -14,19 +13,30 @@ local ShopUI = require "UI/ShopUI"
 
 local Dialog = require "Dialog"
 
-local Player = require "Player"
+local Player = require "entities/Player"
 
 function love.load()
     love.graphics.setDefaultFilter("nearest", "nearest")
     local playerSpriteSheetPath = "images/character_14_frame16x20.png"
-    player = Player.new(350, 250, 50, playerSpriteSheetPath)
-    player.inventory = PlayerInventory.new(30, 30)
+
+    local playerParams = {
+        x = 350, y = 250, 
+        hp = 25, speed = 50, 
+        imagePath = playerSpriteSheetPath
+    }
+
+    player = Player.new(playerParams, 30, 30)
     
-    player.inventory:add_item(ItemData.sword, ItemData.sword.value)
-    player.inventory:add_item(ItemData.potion, ItemData.potion.value)
-    player.inventory:add_item(ItemData.potion, ItemData.potion.value)
-    player.inventory:add_item(ItemData.potion2, ItemData.potion2.value)
-    player.inventory:add_item(ItemData.axe, ItemData.axe.value)
+    local sword = ItemData.new("sword")
+    local potion = ItemData.new("potion")
+    local potion2 = ItemData.new("potion2")
+    local axe = ItemData.new("axe")
+    
+    player.inventory:add_item(sword, sword.value)
+    player.inventory:add_item(potion, potion.value)
+    player.inventory:add_item(potion, potion.value)
+    player.inventory:add_item(potion2, potion2.value)
+    player.inventory:add_item(axe, axe.value)
     
     BookUI.load()
     ChestUI.load()
@@ -43,6 +53,8 @@ end
 function love.update(dt)
     State.update(dt)
     ChestUI.update(dt)
+    ShopUI.update(dt)
+    BookUI.update(dt)
     UImanager.update(dt)
     Dialog.update(dt)
 end
