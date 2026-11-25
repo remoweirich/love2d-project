@@ -1,4 +1,7 @@
 local Inventory = require "inventory/inventory"
+local Item = require "inventory/Item"
+local Equipment = require "inventory/Equipment"
+local Weapon = require "inventory/Weapon"
 local Consumable = require "inventory/Consumable"
 
 local ChestInventory = {}
@@ -40,20 +43,42 @@ function ChestInventory:add_item(item)
                 return true
             end
         end
-        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect)
+        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect, item.effectFn, item.me)
         table.insert(self.items.consumables, newPotion)
         self.slotsUsed = self.slotsUsed + 1
         
     elseif prefix == "i_" then
-        table.insert(self.items.items, item)
+        local newItem = Item.new(item.type, item.name, item.base_weight, item.value)
+        table.insert(self.items.items, newItem)
         self.slotsUsed = self.slotsUsed + 1
 
     elseif prefix == "e_" then
-        table.insert(self.items.equipment, item)
+        local params = {
+            type = item.type,
+            name = item.name,
+            base_weight = item.base_weight,
+            value = item.value,
+            durability = item.durability,
+            max_durability = item.max_durability,
+            stat_bonuses = item.stat_bonuses
+        }
+        local newEquipment = Equipment.new(params)
+        table.insert(self.items.equipment, newEquipment)
         self.slotsUsed = self.slotsUsed + 1
 
     elseif prefix == "w_" then
-        table.insert(self.items.weapons, item)
+        local params = {
+            type = item.type,
+            name = item.name,
+            base_weight = item.base_weight,
+            value = item.value,
+            durability = item.durability,
+            max_durability = item.max_durability,
+            stat_bonuses = item.stat_bonuses,
+            damage_type = item.damage_type
+        }
+        local newWeapon = Weapon.new(params)
+        table.insert(self.items.weapons, newWeapon)
         self.slotsUsed = self.slotsUsed + 1
 
     elseif prefix == "a_" then

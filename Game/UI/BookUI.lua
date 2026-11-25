@@ -1,5 +1,6 @@
 local CommonUI = require "UI/CommonUI"
 local InteractableUI = require "UI/InteractableUI"
+local State = require "states/State"
 
 local BookUI = {}
 local allItems
@@ -14,8 +15,18 @@ end
 local inventoryBg
 local selectedIndex = 1
 
+local uiFont
+local uiScale = 24
+
+local function updateUI(winH)
+    uiScale = math.max(12, math.floor(winH / 25))
+    uiFont = love.graphics.newFont(uiScale)
+    uiFont:setFilter("linear", "linear")
+end
+
 function BookUI.load()
     inventoryBg = love.graphics.newImage("images/inventory.png")
+    updateUI(love.graphics.getHeight())
 end
 
 -- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
@@ -57,47 +68,95 @@ end
 
 
 function BookUI.keypressed(key, person, interactable)
-    if person.inventoryOpen then
-        if InteractableUI.isOpen(interactable) then
-            if confirm then
-                if key == "left" or key == "right" then
-                    confirm.choice = (confirm.choice == 1) and 2 or 1
-                elseif key == "return" or key == "kpenter" then
-                    if confirm.choice == 1 then
-                        local cost = 0
-                        if interactable.type == "Player" then
-                            cost = confirm.item.value
-                        end
-                        local ok, msg = interactable.inventory:add_item(confirm.item, cost)
-                        if ok then 
-                            person.inventory:remove_item(confirm.item, cost)
-                        else
-                            message = { text = msg, time = 2} 
-                        end
+    if not person.inventoryOpen then return end
+
+    if InteractableUI.isOpen(interactable) then
+        -- Sell / Move (unverändert zu deiner Version)
+        if confirm then
+            if key == "left" or key == "right" then
+                confirm.choice = (confirm.choice == 1) and 2 or 1
+            elseif key == "return" or key == "kpenter" then
+                if confirm.choice == 1 then
+                    local cost = 0
+                    if interactable.type == "Player" then
+                        cost = confirm.item.value
                     end
-                    confirm = nil
-                elseif key == "escape" then
-                    confirm = nil
+                    local ok, msg = interactable.inventory:add_item(confirm.item, cost)
+                    if ok then
+                        person.inventory:remove_item(confirm.item, cost)
+                    else
+                        message = { text = msg, time = 2 }
+                    end
                 end
-                return
+                confirm = nil
+            elseif key == "escape" then
+                confirm = nil
             end
-            if key == "return" or key == "kpenter" then
-            local item = allItems[selectedIndex]
-            if item then confirm = { item = item, choice = 1 } end
-            if interactable.type == "Player" and confirm then
-                confirm.question = "Sell " .. confirm.item.name .. " for " .. confirm.item.value .. " Gold?"
-            elseif interactable.type == "Chest" and confirm then
-                confirm.question = "Move " .. confirm.item.name .. " to chest?"
-            end
+            return
         end
 
-        end
         if key == "down" then
             selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
         elseif key == "up" then
             selectedIndex = math.max(selectedIndex - 1, 1)
+        elseif key == "return" or key == "kpenter" then
+            local item = allItems[selectedIndex]
+            if item then
+                confirm = { item = item, choice = 1 }
+                if interactable.type == "Player" then
+                    confirm.question = "Sell " .. item.name .. " for " .. item.value .. " Gold?"
+                elseif interactable.type == "Chest" then
+                    confirm.question = "Move " .. item.name .. " to chest?"
+                end
+            end
         end
-        
+        return
+    end
+
+    -- Eigenes Inventar: Trank trinken
+    local d = DialogManager:getActiveDialog()
+    if d then
+        if key == "e" or key == "return" then
+            if not d.done then DialogManager:complete()
+            else DialogManager:pop() end
+        end
+        return
+    end
+
+    if confirm then
+        if key == "left" or key == "right" then
+            confirm.choice = (confirm.choice == 1) and 2 or 1
+        elseif key == "e" or key == "return" then
+            if confirm.choice == 1 then
+                confirm.item:use(person)
+                person.inventory:remove_item(confirm.item, 0)
+                DialogManager:push("You drank " .. confirm.item.name .. ". Effect: " .. confirm.item.effect)
+                if person.hp <= 0 then
+                    DialogManager:push("You fall to the ground..")
+                    State.push(LoseState)
+                end
+                DialogManager:pop(true)
+            end
+            confirm = nil
+        elseif key == "escape" then
+            confirm = nil
+        end
+        return
+    end
+
+    if key == "down" then
+        selectedIndex = math.min(selectedIndex + 1, math.max(1, #allItems))
+    elseif key == "up" then
+        selectedIndex = math.max(selectedIndex - 1, 1)
+    elseif key == "e" or key == "return" then
+        local item = allItems[selectedIndex]
+        if not (string.sub(item.type, 1, 2) == "c_") then
+            return
+        end
+        if item then
+            confirm = { item = item, choice = 1 }
+            confirm.question = "Drink " .. item.name .. "?"
+        end
     end
 end
 
@@ -126,9 +185,51 @@ end
 --     end
 -- end
 
+
+function love.resize(w, h)
+    updateUI(h)
+end
+
+local function drawHeart(x, y, size)
+    local r = size / 4
+
+    love.graphics.circle("fill", x - r, y, r)
+    love.graphics.circle("fill", x + r, y, r)
+
+    love.graphics.polygon("fill", 
+        x - size / 2, y + r * 0.3, 
+        x + size / 2, y + r * 0.3, 
+        x, y + size * 0.75
+    )
+end
+
+
+
 function BookUI.draw(person)
     if not person.inventoryOpen then return end
     love.graphics.setDefaultFilter("nearest", "nearest")
+
+
+    -------------------
+    love.graphics.setFont(uiFont)
+    love.graphics.setColor(0.9, 0.15, 0.2)
+    
+    local marginX = uiScale * 1
+    local marginY = uiScale * 1
+    local heartSize = uiScale * 0.9
+    
+    local heartX = marginX + (heartSize / 2)
+    local heartY = marginY + (heartSize * 0.4)
+    drawHeart(heartX, heartY, heartSize)
+    
+    local padding = uiScale * 0.4
+    local textX = marginX + heartSize + padding
+    local textY = marginY
+    love.graphics.print(player.hp .. "/" .. player.maxHp, textX, textY)
+    
+    love.graphics.setColor(1, 1, 1)
+
+    ---------------------
 
     local bgX, bgY, scale, invW, invH = CommonUI.getTransform(inventoryBg)
     CommonUI.updateFonts(scale, baseFontSize)

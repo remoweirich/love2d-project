@@ -4,13 +4,15 @@ local Consumable = {}
 Consumable.__index = Consumable
 setmetatable(Consumable, {__index = Item})
 
-function Consumable.new(type, name, base_weight, value, effect)
+function Consumable.new(type, name, base_weight, value, effect, effectFn, me)
     local instance = {
         type = type, name = name,
         base_weight = base_weight,
         value = value,
         quantity = 1,
-        effect = effect
+        effect = effect,
+        effectFn = effectFn,
+        me = me
     }
     setmetatable(instance, Consumable)
     return instance
@@ -33,7 +35,7 @@ end
 Consumable.__add = function(c1, c2)
     if (c1.type == c2.type) and (c1.name == c2.name) then
         local quantity = c1.quantity + 1
-        local new = Consumable.new(c1.type, c1.name, c1.base_weight, c1.value, c1.effect)
+        local new = Consumable.new(c1.type, c1.name, c1.base_weight, c1.value, c1.effect, c1.effectFn, c1.me)
         new.quantity = quantity
         return new
     else
@@ -43,9 +45,14 @@ end
 
 Consumable.__sub = function(c1, num)
     local quantity = c1.quantity - num
-    local new = Consumable.new(c1.type, c1.name, c1.base_weight, c1.value, c1.effect)
+    local new = Consumable.new(c1.type, c1.name, c1.base_weight, c1.value, c1.effect, c1.effectFn, c1.me)
     new.quantity = quantity
     return new
 end
+
+function Consumable:use(person)
+    self.effectFn(person)
+end
+
 
 return Consumable

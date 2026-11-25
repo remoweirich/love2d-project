@@ -10,12 +10,15 @@ local UImanager = require "UI/UImanager"
 local BookUI = require "UI/BookUI"
 local ChestUI = require "UI/ChestUI"
 local ShopUI = require "UI/ShopUI"
+local CommonUI = require "UI/CommonUI"
 
 local Dialog = require "Dialog"
 
 local Player = require "entities/Player"
 
+
 function love.load()
+
     love.graphics.setDefaultFilter("nearest", "nearest")
     local playerSpriteSheetPath = "images/character_14_frame16x20.png"
 
@@ -58,6 +61,7 @@ function love.update(dt)
     UImanager.update(dt)
     Dialog.update(dt)
 end
+
 
 function love.draw()
     State.draw()

@@ -31,6 +31,7 @@ local enemies = {}
 local npcs = {}
 
 local TRIGGER_RANGE = 50
+local combatCooldown = 0
 
 function Explore.enter(mapPath, spawnX, spawnY)
     mapPath = mapPath or "maps/test2.lua"
@@ -217,7 +218,6 @@ function Explore.update(dt)
         npc.y = npc.collider:getY()
     end
 
-    local combatCooldown = 0
     for i, enemy in ipairs(enemies) do
         local dx = enemy.x - player.x
         local dy = enemy.y - player.y
@@ -225,13 +225,22 @@ function Explore.update(dt)
             State.push(CombatState, enemy, function(result)
                 if result == "won" then
                     table.remove(enemies, i)
+                elseif result == "lost" then
+                    State:push(LoseState)
+                elseif result == "boss" then
+                    State:push(WinState)
+                elseif result == "fled" then
+                    combatCooldown = 2
                 end
             end)
-            combatCooldown = 2
             return
         end
     end
-    combatCooldown = combatCooldown - dt
+    if combatCooldown > 0 then
+        combatCooldown = combatCooldown - dt
+    else
+        combatCooldown = 0
+    end
 
 
     cam:lookAt(player.x+16/2, player.y + 20/2)

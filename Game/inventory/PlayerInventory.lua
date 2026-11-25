@@ -47,7 +47,7 @@ function PlayerInventory:add_item(item, cost)
                 return true
             end
         end
-        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect)
+        local newPotion = Consumable.new(item.type, item.name, item.base_weight, item.value, item.effect, item.effectFn, item.me)
         table.insert(self.items.consumables, newPotion)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost
@@ -85,7 +85,7 @@ function PlayerInventory:add_item(item, cost)
             stat_bonuses = item.stat_bonuses,
             damage_type = item.damage_type
         }
-        local newWeapon = Equipment.new(params)
+        local newWeapon = Weapon.new(params)
         table.insert(self.items.weapons, newWeapon)
         self.current_weight = self.current_weight + item.base_weight
         self.money = self.money - cost

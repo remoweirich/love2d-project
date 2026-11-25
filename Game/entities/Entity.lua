@@ -15,6 +15,9 @@ end
 function Entity:isAlive()
     return self.hp > 0
 end
+function Entity:heal(amount)
+    self.hp = math.min(self.maxHp, self.hp + amount)
+end
 
 function Entity:takeDamage(amount)
     self.hp = math.max(0, self.hp - amount)

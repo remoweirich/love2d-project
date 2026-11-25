@@ -8,7 +8,7 @@ EnemyData.templates = {
         attack = 5, defence = 1,
         speed = 20, goldDrop = 5,
         randomNoises = {
-            "Grrrhhh", "Uurhhhhghg", "Rhhraaa", "grrruuhh"
+            "Grrrhhh", "Uurhhhhghg", "Rhhraaa", "grrruuhh",
         }
     },
 }

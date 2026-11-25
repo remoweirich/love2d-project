@@ -23,18 +23,13 @@ local function itemOptions()
 end
 
 local function showMessage(text, afterFn)
-    DialogManager:show(text)
     CombatState.afterMessage = afterFn
     CombatState.phase = "message"
+    DialogManager:push(text)
+    local d = DialogManager:getActiveDialog()
+    DialogManager:pop()
 end
 
-function CombatState.enter(enemy, onFinish)
-    CombatState.enemy = enemy
-    CombatState.onFinish = onFinish
-    CombatState.phase = "menu"
-    CombatState.menuIndex = 1
-    CombatState.menuOptions = { "Attack", "Items", "Flee" }
-end
 
 function CombatState.finish(result)
     State.pop()
@@ -55,6 +50,19 @@ local function enemyTurn()
     end)
 end
 
+function CombatState.enter(enemy, onFinish)
+    showMessage("You are attacked by a " .. enemy.name)
+    CombatState.enemy = enemy
+    CombatState.onFinish = onFinish
+    CombatState.phase = "menu"
+    CombatState.menuIndex = 1
+    CombatState.menuOptions = { "Attack", "Items", "Flee" }
+
+    if enemy.speed > player.speed then
+        enemyTurn()
+    end
+end
+
 local function doAttack(weapon)
     local enemy = CombatState.enemy
     local atk = weapon.stat_bonuses and weapon.stat_bonuses.attack or 1
@@ -62,13 +70,14 @@ local function doAttack(weapon)
     enemy:takeDamage(dmg)
     local broken = false
     local damage_type = "Bludgeoning"
-    if not weapon.name == "Fists" then
+    if weapon.name ~= "Fists" then
         broken = weapon:use()
+        print(weapon:display())
         damage_type = weapon.damage_type
     end
     showMessage("You attack with " .. weapon.name .. " for " .. dmg .. " " .. damage_type .. " damage!", function()
         if broken then showMessage("Your weapon got destroyed during the attack...") end
-        if enemy.hp/enemy.maxHp <= 0.2 then
+        if (enemy.hp > 0) and (enemy.hp/enemy.maxHp <= 0.2) then
             showMessage(enemy.name .. " looks very hurt..")
         end
         if not enemy:isAlive() then
@@ -82,10 +91,28 @@ local function doAttack(weapon)
 end
 
 local function doItem(item)
-    player.inventory:remove_item(item, 0)
-    showMessage("You used " .. item.name .. ".", function ()
-        enemyTurn()
-    end)
+    local enemy = CombatState.enemy
+    if item.me then
+        item:use(player)
+        player.inventory:remove_item(item, 0)
+        showMessage("You feel warm inside... Effect: " .. item.effect, function ()
+            enemyTurn()
+        end)
+    else
+        item:use(enemy)
+        player.inventory:remove_item(item, 0)
+        showMessage("You threw " .. item.name .. " on " .. enemy.name .. "... Effect: " .. item.effect)
+        if (enemy.hp > 0) and (enemy.hp/enemy.maxHp <= 0.2) then
+            showMessage(enemy.name .. " looks very hurt..")
+        end
+        if not enemy:isAlive() then
+            player.inventory.money = player.inventory.money + (enemy.goldDrop or 0)
+            showMessage("You defeated the " .. enemy.name .. "! Found " .. (enemy.goldDrop or 0) .. " gold.", function ()
+                CombatState.finish("won") end)
+        else
+            enemyTurn()
+        end
+    end
 end
 
 local function doFlee()
@@ -106,9 +133,12 @@ function CombatState.keypressed(key)
         if key == "e" or key == "return" then
             if d and not d.done then DialogManager:complete()
             else
-                local cb = CombatState.afterMessage
-                CombatState.afterMessage = nil
-                if cb then cb() end
+                DialogManager:pop()
+                if not DialogManager:getActiveDialog() then
+                    local cb = CombatState.afterMessage
+                    CombatState.afterMessage = nil
+                    if cb then cb() end
+                end
             end
         end
         return

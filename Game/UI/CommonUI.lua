@@ -1,7 +1,5 @@
 local CommonUI = {}
 
-local chestBg
-
 CommonUI.icons = {
     { name = "Knight's Straight Sword", icon = "images/icons/KnightsStraightSword.png" },
     { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},

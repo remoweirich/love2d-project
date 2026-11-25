@@ -1,6 +1,7 @@
 local State = require "states/State"
 local BookUI = require "UI/BookUI"
 local InteractableUI = require "UI/InteractableUI"
+local Dialog = require "Dialog"
 
 local BookState = { overlay = true }
 
@@ -28,6 +29,7 @@ end
 
 function BookState.draw()
     BookUI.draw(player)
+    Dialog.draw()
 end
 
 return BookState
