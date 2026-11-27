@@ -19,7 +19,7 @@ function Consumable.new(type, name, base_weight, value, effect, effectFn, me)
 end
 
 function Consumable:describe()
-    local printString = "Effect: " .. self.effect .. "\nWeight: " .. self.base_weight*self.quantity .. "kg\nValue: " .. self.value*self.quantity .. "G"
+    local printString = "Effect: " .. self.effect .. "\nWeight: " .. self.base_weight*self.quantity .. "kg\nValue: " .. self.value .. "G"
     return printString
 end
 

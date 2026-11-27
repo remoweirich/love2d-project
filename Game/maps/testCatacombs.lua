@@ -9,8 +9,8 @@ return {
   height = 50,
   tilewidth = 16,
   tileheight = 16,
-  nextlayerid = 15,
-  nextobjectid = 74,
+  nextlayerid = 16,
+  nextobjectid = 76,
   properties = {},
   tilesets = {
     {
@@ -599,6 +599,36 @@ return {
           properties = {
             ["enemyType"] = "shielded_skeleton"
           }
+        }
+      }
+    },
+    {
+      type = "objectgroup",
+      draworder = "topdown",
+      id = 15,
+      name = "SpawnPoint",
+      class = "",
+      visible = true,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      parallaxx = 1,
+      parallaxy = 1,
+      properties = {},
+      objects = {
+        {
+          id = 75,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 48,
+          y = 80,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          opacity = 1,
+          visible = true,
+          properties = {}
         }
       }
     },
@@ -1401,7 +1431,9 @@ return {
           opacity = 1,
           visible = true,
           properties = {
-            ["mapPath"] = "maps/test2.lua"
+            ["mapPath"] = "maps/test2.lua",
+            ["spawnX"] = 400,
+            ["spawnY"] = 416
           }
         }
       }
@@ -1432,7 +1464,9 @@ return {
           rotation = 0,
           opacity = 1,
           visible = true,
-          properties = {}
+          properties = {
+            ["invTpl"] = "c4"
+          }
         },
         {
           id = 41,
@@ -1446,7 +1480,9 @@ return {
           rotation = 0,
           opacity = 1,
           visible = true,
-          properties = {}
+          properties = {
+            ["invTpl"] = "c2"
+          }
         },
         {
           id = 73,
@@ -1460,7 +1496,9 @@ return {
           rotation = 0,
           opacity = 1,
           visible = true,
-          properties = {}
+          properties = {
+            ["invTpl"] = "c3"
+          }
         }
       }
     }

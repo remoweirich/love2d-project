@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 19,
-  nextobjectid = 55,
+  nextobjectid = 56,
   properties = {},
   tilesets = {
     {
@@ -477,7 +477,9 @@ return {
           rotation = 0,
           opacity = 1,
           visible = true,
-          properties = {}
+          properties = {
+            ["invTpl"] = "c1"
+          }
         }
       }
     },
@@ -1056,7 +1058,9 @@ return {
           opacity = 1,
           visible = true,
           properties = {
-            ["mapPath"] = "maps/testCatacombs.lua"
+            ["mapPath"] = "maps/testCatacombs.lua",
+            ["spawnX"] = 48,
+            ["spawnY"] = 80
           }
         }
       }
@@ -1088,6 +1092,7 @@ return {
           opacity = 1,
           visible = true,
           properties = {
+            ["invTpl"] = "s1",
             ["npcName"] = "Aphelton",
             ["npcType"] = "Shop"
           }

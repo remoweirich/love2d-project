@@ -130,12 +130,16 @@ function BookUI.keypressed(key, person, interactable)
             if confirm.choice == 1 then
                 confirm.item:use(person)
                 person.inventory:remove_item(confirm.item, 0)
-                DialogManager:push("You drank " .. confirm.item.name .. ". Effect: " .. confirm.item.effect)
-                if person.hp <= 0 then
-                    DialogManager:push("You fall to the ground..")
-                    State.push(LoseState)
+                if confirm.item.type == "c_Potion" then
+                    DialogManager:push("You drank " .. confirm.item.name .. ". Effect: " .. confirm.item.effect)
+                    if person.hp <= 0 then
+                        DialogManager:push("You fall to the ground..")
+                        State.push(LoseState)
+                    end
+                else
+                    DialogManager:push("You used " .. confirm.item.name .. ". Effect: " .. confirm.item.effect)
                 end
-                DialogManager:pop(true)
+                DialogManager:pop()
             end
             confirm = nil
         elseif key == "escape" then
@@ -150,6 +154,9 @@ function BookUI.keypressed(key, person, interactable)
         selectedIndex = math.max(selectedIndex - 1, 1)
     elseif key == "e" or key == "return" then
         local item = allItems[selectedIndex]
+        if not item then
+            return
+        end
         if not (string.sub(item.type, 1, 2) == "c_") then
             return
         end

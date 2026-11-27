@@ -18,7 +18,23 @@ ItemData.templates = {
             },
     potion2 = { class = "consumable", type = "c_Potion", name = "Charon's Kiss",
                 base_weight = 0.5, value = 5, effect = "A sweet, lingering warmth—followed by the Ferryman’s cold hand pulling you into his boat",
-                effectFn = function(subject) subject:takeDamage(10) end, me = false }
+                effectFn = function(subject) subject:takeDamage(10) end, me = false 
+            },
+    dagger = { class = "weapon", type = "w_Dagger", name = "Unsharp Dagger",
+                base_weight = 2, value = 2, durability = 20, max_durability = 20,
+                stat_bonuses = {attack = 4, defence = 0}, damage_type = "Slashing"
+            },
+    coin = { class = "consumable", type = "c_Coin", name = "Dirty Gold Coin",
+             base_weight = 0, value = 1, effect = "Dirty, but nonetheless valuable",
+             effectFn = function(subject) subject.inventory.money = subject.inventory.money + 1 end
+            },
+    brittlebone = { 
+        class = "consumable", type = "c_Potion", name = "Brittle-Bone Brew",
+        base_weight = 1, value = 5, effect = "Seeping into armor and marrow alike, leaving its victim fragile as dried twigs.",
+        effectFn = function(subject) if subject.defence then subject.defence = subject.defence - 7 end end 
+    }
+    
+            
 }
 
 function ItemData.new(key)

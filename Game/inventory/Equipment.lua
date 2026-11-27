@@ -44,7 +44,8 @@ function Equipment:use()
     self.durability = self.durability - possibleDamage[num]
     -- maybe do debuff if durability lower than some number, also maybe name change
     if self.durability <= 0 then
-         broken = true
+        self.durability = 0
+        broken = true
     end
     return broken
 end

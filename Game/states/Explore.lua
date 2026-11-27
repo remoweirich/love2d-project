@@ -12,6 +12,7 @@ local cam = camera()
 
 local ItemData = require "data/ItemData"
 local EnemyData = require "data/EnemyData"
+local InventoryData = require "data/InventoryData"
 
 local Player = require "entities/Player"
 
@@ -32,14 +33,14 @@ local npcs = {}
 local mapChange = {}
 local currentMapPath
 
-local TRIGGER_RANGE = 50
+local TRIGGER_RANGE = 30
 local combatCooldown = 0
 
 
 ------------------------------------
 ------------------------------------
 ------------------------------------
-local MapData = {}
+local mapData = {}
 
 local function setActive(list, active)
     for _, o in pairs(list) do o.collider:setActive(active) end
@@ -49,25 +50,17 @@ local function unloadMap()
     for _, list in ipairs({ walls, trees, plants, bushes, stones }) do
         for _, c in ipairs(list) do c:destroy() end
     end
+    for _, d in ipairs(mapChange) do d.collider:destroy() end
+    setActive(npcs, false)
+    setActive(chests, false)
 end
 
-------------------------------------
-------------------------------------
-------------------------------------
-
-function Explore.enter(mapPath, spawnX, spawnY)
-    currentMapPath = mapPath or "maps/test2.lua"
+local function loadMap(path, spawnX, spawnY)
+    unloadMap()
+    currentMapPath = path
     map = sti(currentMapPath)
+    walls, trees, plants, bushes, stones, mapChange = {}, {}, {}, {}, {}, {}
 
-    interactables = {}
-    enemies = {}
-    npcs = {}
-    mapChange = {}
-    walls, trees, plants, bushes, stones, chests = {}, {}, {}, {}, {}, {}
-
-    player.collider:setPosition(spawnX or 350, spawnY or 250)
-    
-    
     if map.layers["Walls"] then
         for i, obj in pairs(map.layers["Walls"].objects) do
             local wall = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
@@ -108,35 +101,12 @@ function Explore.enter(mapPath, spawnX, spawnY)
         end
     end
 
-    if map.layers["ChestsObj"] then
-        for i, obj in pairs(map.layers["ChestsObj"].objects) do
-            local chest = {
-                x = obj.x, y = obj.y,
-                w = obj.width, h = obj.height,
-                inventory = Inventory.new(math.huge, math.huge)
-            }
-            chest.collider = world:newRectangleCollider(obj.x, obj.y, obj.width/1.1, obj.height/1.1)
-            chest.collider:setType('static')
-            chest.inventory = ChestInventory.new(8)
-            chest.inventoryOpen = false
-            chest.type = "Chest"
-            table.insert(chests, chest)
-            table.insert(interactables, chest)
-        end
-    end
-
-    if map.layers["EnemyObj"] then
-        for i, obj in pairs(map.layers["EnemyObj"].objects) do
-            local key = obj.properties.enemyType
-            local enemy = EnemyData.new(key, obj.x, obj.y)
-            table.insert(enemies, enemy)
-        end
-    end
-
     if map.layers["MapChange"] then
         for i, obj in pairs(map.layers["MapChange"].objects) do
             local mapPath = obj.properties.mapPath
-            local newMap = { x = obj.x, y = obj.y, w = obj.width, mapPath = mapPath}
+            local spawnX = obj.properties.spawnX
+            local spawnY = obj.properties.spawnY
+            local newMap = { x = obj.x, y = obj.y, w = obj.width, mapPath = mapPath, spawnX = spawnX, spawnY = spawnY}
             newMap.collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
             newMap.collider:setType('static')
             newMap.type = "MapChange"
@@ -145,59 +115,109 @@ function Explore.enter(mapPath, spawnX, spawnY)
         end
     end
 
-    if map.layers["NPC"] then
-        for i, obj in pairs(map.layers["NPC"].objects) do
-            local npcSpriteSheetPath = "images/character_1_frame16x20.png"
-            local npcParams = {
-                x = obj.x, y = obj.y, 
-                hp = 100, speed = 0,
-                imagePath = npcSpriteSheetPath
-            }
-            if obj.properties.npcType == "Shop" then
-                local npc  = Player.new(npcParams, 100, 50) 
-                npc.name = obj.properties.npcName
-                npc.anim:gotoFrame(2)
-                npc.collider:setType("static")
-                npc.haveMet = false
-                npc.dialog = Dialog.shopkeeperDialog
 
-                table.insert(interactables, npc)
-                table.insert(npcs, npc)
+    if not mapData[path] then
+        enemies, npcs, chests = {}, {}, {}
+
+        if map.layers["ChestsObj"] then
+            for i, obj in pairs(map.layers["ChestsObj"].objects) do
+                local chest = {
+                    x = obj.x, y = obj.y,
+                    w = obj.width, h = obj.height,
+                    inventory = Inventory.new(math.huge, math.huge)
+                }
+                chest.collider = world:newRectangleCollider(obj.x, obj.y, obj.width/1.1, obj.height/1.1)
+                chest.collider:setType('static')
+                chest.inventory = ChestInventory.new(8)
+                chest.inventoryOpen = false
+                chest.type = "Chest"
+
+                local invTplKey = obj.properties.invTpl
+                local invTpl = InventoryData.new(invTplKey)
+                    for _, key in ipairs(invTpl) do
+                        local newItem = ItemData.new(key)
+                        chest.inventory:add_item(newItem)
+                    end
+
+                table.insert(chests, chest)
+                table.insert(interactables, chest)
             end
-            
         end
+
+        -- local sword = ItemData.new("sword")
+        -- local potion = ItemData.new("potion")
+        -- local potion2 = ItemData.new("potion2")
+        -- local axe = ItemData.new("axe")
+
+        -- if chests[1] then
+        --     chests[1].inventory:add_item(axe)
+        --     chests[1].inventory:add_item(axe)
+        --     chests[1].inventory:add_item(potion)
+        --     chests[1].inventory:add_item(potion)
+        --     print("Enemies geladen:", #enemies)
+        -- end
+
+        if map.layers["EnemyObj"] then
+            for i, obj in pairs(map.layers["EnemyObj"].objects) do
+                local key = obj.properties.enemyType
+                local enemy = EnemyData.new(key, obj.x, obj.y)
+                table.insert(enemies, enemy)
+            end
+        end
+
+
+        if map.layers["NPC"] then
+            for i, obj in pairs(map.layers["NPC"].objects) do
+                local npcSpriteSheetPath = "images/character_1_frame16x20.png"
+                local npcParams = {
+                    x = obj.x, y = obj.y, 
+                    hp = 100, speed = 0,
+                    imagePath = npcSpriteSheetPath
+                }
+                if obj.properties.npcType == "Shop" then
+                    local npc  = Player.new(npcParams, 100, 50) 
+                    npc.name = obj.properties.npcName
+                    npc.anim:gotoFrame(2)
+                    npc.collider:setType("static")
+                    npc.haveMet = false
+                    npc.dialog = Dialog.shopkeeperDialog
+                    
+                    local invTplKey = obj.properties.invTpl
+                    local invTpl = InventoryData.new(invTplKey)
+                    for _, key in ipairs(invTpl) do
+                        local newItem = ItemData.new(key)
+                        npc.inventory:add_item(newItem, 0)
+                    end
+                    table.insert(interactables, npc)
+                    table.insert(npcs, npc)
+                end
+                
+            end
+        end
+
+        mapData[path] = { enemies = enemies, npcs = npcs, chests = chests }
+    else
+        local d = mapData[path]
+        enemies, npcs, chests = d.enemies, d.npcs, d.chests
+        setActive(npcs, true)
+        setActive(chests, true)
     end
+    
+    interactables = {}
+    for _, c in ipairs(chests) do table.insert(interactables, c) end
+    for _, n in ipairs(npcs) do table.insert(interactables, n) end
+    for _, d in ipairs(mapChange) do table.insert(interactables, d) end
 
-    -- if mapPath == "maps/test2.lua" then
-    --     local shopKeeperSpriteSheetPath = "images/character_1_frame16x20.png"
-    --     local shopKeeperParams = {
-    --         x = 400, y = 300, 
-    --         hp = 100, speed = 0,
-    --         imagePath = shopKeeperSpriteSheetPath
-    --     }
+    player.collider:setPosition(spawnX or 350, spawnY or 250)
+    
+end
 
-    --     ShopKeeper = Player.new(shopKeeperParams, 100, 50)
-    --     ShopKeeper.anim:gotoFrame(2)
-    --     ShopKeeper.collider:setType("static")
-    --     ShopKeeper.haveMet = false
-    --     ShopKeeper.dialog = Dialog.shopkeeperDialog
+------------------------------------
+------------------------------------
+------------------------------------
 
-
-    --     table.insert(interactables, ShopKeeper)
-    -- end
-
-    local sword = ItemData.new("sword")
-    local potion = ItemData.new("potion")
-    local potion2 = ItemData.new("potion2")
-    local axe = ItemData.new("axe")
-
-    if chests[1] then
-        chests[1].inventory:add_item(axe)
-        chests[1].inventory:add_item(axe)
-        chests[1].inventory:add_item(potion)
-        chests[1].inventory:add_item(potion)
-        print("Enemies geladen:", #enemies)
-    end
+function Explore.enter(mapPath, spawnX, spawnY)
+    loadMap(mapPath or "maps/test2.lua", spawnX, spawnY)
 end
 
 
@@ -269,8 +289,8 @@ function Explore.update(dt)
 
     for i, enemy in ipairs(enemies) do
         enemy.anim:update(dt)
-        local dx = enemy.x - player.x
-        local dy = enemy.y - player.y
+        local dx = (enemy.x + 9) - player.x
+        local dy = (enemy.y + 9) - player.y
         if math.sqrt(dx*dx + dy*dy) < TRIGGER_RANGE and combatCooldown == 0 then
             State.push(CombatState, enemy, function(result)
                 if result == "won" then
@@ -326,7 +346,7 @@ function Explore.draw()
         map:drawLayer(map.layers["Chests"])
         map:drawLayer(map.layers["Dungeon"])
         if currentMapPath == "maps/testCatacombs.lua" then
-            scale = 1.35
+            scale = 1.25
         end
         for _, npc in ipairs(npcs) do
             npc.anim:draw(npc.spriteSheet, npc.x, npc.y, nil, scale, scale, 8, 14)
@@ -362,9 +382,7 @@ function Explore.keypressed(key)
             State.push(DialogState, function () State.push(Utils.whichState(i), i) end)
         else
             if i.type == "MapChange" then
-                local spX, spY = 10, 10  
-                Explore.exit()
-                State.push(Explore, i.mapPath, 60, 100)
+                loadMap(i.mapPath, i.spawnX, i.spawnY)
                 return
             end
             State.push(Utils.whichState(i), i)

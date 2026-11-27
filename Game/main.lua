@@ -6,7 +6,6 @@ local Explore = require "states/Explore"
 
 local ItemData = require "data/ItemData"
 
-local UImanager = require "UI/UImanager"
 local BookUI = require "UI/BookUI"
 local ChestUI = require "UI/ChestUI"
 local ShopUI = require "UI/ShopUI"
@@ -38,18 +37,12 @@ function love.load()
         imagePath = playerSpriteSheetPath
     }
 
-    player = Player.new(playerParams, 30, 30)
-    
-    local sword = ItemData.new("sword")
-    local potion = ItemData.new("potion")
-    local potion2 = ItemData.new("potion2")
+    player = Player.new(playerParams, 30, 0)
+
     local axe = ItemData.new("axe")
+    axe:repair()
+    player.inventory:add_item(axe, 0)
     
-    player.inventory:add_item(sword, sword.value)
-    player.inventory:add_item(potion, potion.value)
-    player.inventory:add_item(potion, potion.value)
-    player.inventory:add_item(potion2, potion2.value)
-    player.inventory:add_item(axe, axe.value)
     
     BookUI.load()
     ChestUI.load()
@@ -69,7 +62,6 @@ function love.update(dt)
     ChestUI.update(dt)
     ShopUI.update(dt)
     BookUI.update(dt)
-    UImanager.update(dt)
     Dialog.update(dt)
 end
 

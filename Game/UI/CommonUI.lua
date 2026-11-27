@@ -5,6 +5,9 @@ CommonUI.icons = {
     { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},
     { name = "Executioner's Axe", icon = "images/icons/ExecutionersAxe.png"},
     { name = "Charon's Kiss", icon = "images/icons/CharonsKiss.png"},
+    { name = "Unsharp Dagger", icon = "images/icons/UnsharpDagger.png" },
+    { name = "Dirty Gold Coin", icon = "images/icons/Coin.png" },
+    { name = "Brittle-Bone Brew", icon = "images/icons/BrittleBoneBrew.png" }
 
 }
 
