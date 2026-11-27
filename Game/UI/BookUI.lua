@@ -15,18 +15,18 @@ end
 local inventoryBg
 local selectedIndex = 1
 
-local uiFont
-local uiScale = 24
+-- local uiFont
+-- local uiScale = 24
 
-local function updateUI(winH)
-    uiScale = math.max(12, math.floor(winH / 25))
-    uiFont = love.graphics.newFont(uiScale)
-    uiFont:setFilter("linear", "linear")
-end
+-- local function updateUI(winH)
+--     uiScale = math.max(12, math.floor(winH / 25))
+--     uiFont = love.graphics.newFont(uiScale)
+--     uiFont:setFilter("linear", "linear")
+-- end
 
 function BookUI.load()
     inventoryBg = love.graphics.newImage("images/inventory.png")
-    updateUI(love.graphics.getHeight())
+    -- updateUI(love.graphics.getHeight())
 end
 
 -- Alle Werte sind in Pixeln des ORIGINALBILDES (2400x1792)
@@ -186,22 +186,22 @@ end
 -- end
 
 
-function love.resize(w, h)
-    updateUI(h)
-end
+-- function love.resize(w, h)
+--     updateUI(h)
+-- end
 
-local function drawHeart(x, y, size)
-    local r = size / 4
+-- local function drawHeart(x, y, size)
+--     local r = size / 4
 
-    love.graphics.circle("fill", x - r, y, r)
-    love.graphics.circle("fill", x + r, y, r)
+--     love.graphics.circle("fill", x - r, y, r)
+--     love.graphics.circle("fill", x + r, y, r)
 
-    love.graphics.polygon("fill", 
-        x - size / 2, y + r * 0.3, 
-        x + size / 2, y + r * 0.3, 
-        x, y + size * 0.75
-    )
-end
+--     love.graphics.polygon("fill", 
+--         x - size / 2, y + r * 0.3, 
+--         x + size / 2, y + r * 0.3, 
+--         x, y + size * 0.75
+--     )
+-- end
 
 
 
@@ -210,26 +210,26 @@ function BookUI.draw(person)
     love.graphics.setDefaultFilter("nearest", "nearest")
 
 
-    -------------------
-    love.graphics.setFont(uiFont)
-    love.graphics.setColor(0.9, 0.15, 0.2)
+    -- -------------------
+    -- love.graphics.setFont(uiFont)
+    -- love.graphics.setColor(0.9, 0.15, 0.2)
     
-    local marginX = uiScale * 1
-    local marginY = uiScale * 1
-    local heartSize = uiScale * 0.9
+    -- local marginX = uiScale * 1
+    -- local marginY = uiScale * 1
+    -- local heartSize = uiScale * 0.9
     
-    local heartX = marginX + (heartSize / 2)
-    local heartY = marginY + (heartSize * 0.4)
-    drawHeart(heartX, heartY, heartSize)
+    -- local heartX = marginX + (heartSize / 2)
+    -- local heartY = marginY + (heartSize * 0.4)
+    -- drawHeart(heartX, heartY, heartSize)
     
-    local padding = uiScale * 0.4
-    local textX = marginX + heartSize + padding
-    local textY = marginY
-    love.graphics.print(player.hp .. "/" .. player.maxHp, textX, textY)
+    -- local padding = uiScale * 0.4
+    -- local textX = marginX + heartSize + padding
+    -- local textY = marginY
+    -- love.graphics.print(player.hp .. "/" .. player.maxHp, textX, textY)
     
-    love.graphics.setColor(1, 1, 1)
+    -- love.graphics.setColor(1, 1, 1)
 
-    ---------------------
+    -- ---------------------
 
     local bgX, bgY, scale, invW, invH = CommonUI.getTransform(inventoryBg)
     CommonUI.updateFonts(scale, baseFontSize)

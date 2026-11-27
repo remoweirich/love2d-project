@@ -23,33 +23,64 @@ local Dialog = require "Dialog"
 
 local ChestUI = require "UI/ChestUI"
 
-local Explore = { overlay = true}
+local Explore = { overlay = false}
 local map
-local walls, plants, bushes, stones, chests = {}, {}, {}, {}, {}
+local walls, trees, plants, bushes, stones, chests = {}, {}, {}, {}, {}, {}
 local interactables = {}
 local enemies = {}
 local npcs = {}
+local mapChange = {}
+local currentMapPath
 
 local TRIGGER_RANGE = 50
 local combatCooldown = 0
 
+
+------------------------------------
+------------------------------------
+------------------------------------
+local MapData = {}
+
+local function setActive(list, active)
+    for _, o in pairs(list) do o.collider:setActive(active) end
+end
+
+local function unloadMap()
+    for _, list in ipairs({ walls, trees, plants, bushes, stones }) do
+        for _, c in ipairs(list) do c:destroy() end
+    end
+end
+
+------------------------------------
+------------------------------------
+------------------------------------
+
 function Explore.enter(mapPath, spawnX, spawnY)
-    mapPath = mapPath or "maps/test2.lua"
-    map = sti(mapPath)
+    currentMapPath = mapPath or "maps/test2.lua"
+    map = sti(currentMapPath)
 
     interactables = {}
     enemies = {}
     npcs = {}
-    walls, plants, bushes, stones, chests = {}, {}, {}, {}, {}
+    mapChange = {}
+    walls, trees, plants, bushes, stones, chests = {}, {}, {}, {}, {}, {}
 
     player.collider:setPosition(spawnX or 350, spawnY or 250)
     
     
     if map.layers["Walls"] then
         for i, obj in pairs(map.layers["Walls"].objects) do
-            local wall = world:newRectangleCollider(obj.x, obj.y, obj.width/2, obj.height/1.5)
+            local wall = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
             wall:setType('static')
             table.insert(walls, wall)
+        end
+    end
+
+    if map.layers["Trees"] then
+        for i, obj in pairs(map.layers["Trees"].objects) do
+            local tree = world:newRectangleCollider(obj.x, obj.y, obj.width/2, obj.height/1.5)
+            tree:setType('static')
+            table.insert(trees, tree)
         end
     end
 
@@ -102,6 +133,18 @@ function Explore.enter(mapPath, spawnX, spawnY)
         end
     end
 
+    if map.layers["MapChange"] then
+        for i, obj in pairs(map.layers["MapChange"].objects) do
+            local mapPath = obj.properties.mapPath
+            local newMap = { x = obj.x, y = obj.y, w = obj.width, mapPath = mapPath}
+            newMap.collider = world:newRectangleCollider(obj.x, obj.y, obj.width, obj.height)
+            newMap.collider:setType('static')
+            newMap.type = "MapChange"
+            table.insert(mapChange, newMap)
+            table.insert(interactables, newMap)
+        end
+    end
+
     if map.layers["NPC"] then
         for i, obj in pairs(map.layers["NPC"].objects) do
             local npcSpriteSheetPath = "images/character_1_frame16x20.png"
@@ -148,11 +191,13 @@ function Explore.enter(mapPath, spawnX, spawnY)
     local potion2 = ItemData.new("potion2")
     local axe = ItemData.new("axe")
 
-    chests[1].inventory:add_item(axe)
-    chests[1].inventory:add_item(axe)
-    chests[1].inventory:add_item(potion)
-    chests[1].inventory:add_item(potion)
-    print("Enemies geladen:", #enemies)
+    if chests[1] then
+        chests[1].inventory:add_item(axe)
+        chests[1].inventory:add_item(axe)
+        chests[1].inventory:add_item(potion)
+        chests[1].inventory:add_item(potion)
+        print("Enemies geladen:", #enemies)
+    end
 end
 
 
@@ -163,9 +208,13 @@ function Explore.exit()
     for _, c in ipairs(stones) do c:destroy() end
     for _, c in ipairs(chests) do c.collider:destroy() end
     for _, c in ipairs(npcs) do c.collider:destroy() end
+    for _, c in ipairs(mapChange) do c.collider:destroy() end
+    for _,c in ipairs(trees) do c:destroy() end
     chests = {}
     interactables = {}
     npcs = {}
+    enemies = {}
+    trees = {}
     -- if ShopKeeper then ShopKeeper.collider:destroy() end
     -- ShopKeeper = nil
 end
@@ -219,6 +268,7 @@ function Explore.update(dt)
     end
 
     for i, enemy in ipairs(enemies) do
+        enemy.anim:update(dt)
         local dx = enemy.x - player.x
         local dy = enemy.y - player.y
         if math.sqrt(dx*dx + dy*dy) < TRIGGER_RANGE and combatCooldown == 0 then
@@ -263,26 +313,35 @@ function Explore.update(dt)
     if cam.y > (mapH - h/2/cam.scale) then
         cam.y = (mapH - h/2/cam.scale)
     end
+
     
 end
 
 function Explore.draw()
+    local scale = 1
     cam:attach()
         map:drawLayer(map.layers["Base Layer"])
         map:drawLayer(map.layers["Height 1"])
         map:drawLayer(map.layers["Test"])
         map:drawLayer(map.layers["Chests"])
         map:drawLayer(map.layers["Dungeon"])
-        for _, npc in ipairs(npcs) do
-            npc.anim:draw(npc.spriteSheet, npc.x, npc.y, nil, 1, 1, 8, 14)
+        if currentMapPath == "maps/testCatacombs.lua" then
+            scale = 1.35
         end
-        player.anim:draw(player.spriteSheet, player.x, player.y, nil, 1, 1, 8, 14)
+        for _, npc in ipairs(npcs) do
+            npc.anim:draw(npc.spriteSheet, npc.x, npc.y, nil, scale, scale, 8, 14)
+        end
+        for _, enemy in ipairs(enemies) do
+            enemy.anim:draw(enemy.spriteSheet, enemy.x+5, enemy.y+5, nil, scale*0.75, scale*0.75, 32, 32)
+        end
+        player.anim:draw(player.spriteSheet, player.x, player.y, nil, scale, scale, 8, 14)
         map:drawLayer(map.layers["Height 2"])
     cam:detach()
 
     for _, chest in ipairs(chests) do
         ChestUI.draw(chest)
     end
+    
 end
 
 function Explore.keypressed(key)
@@ -291,7 +350,7 @@ function Explore.keypressed(key)
         return
     end
     if key == "e" then
-        local i = Utils.nearestInteractable(20, interactables)
+        local i = Utils.nearestInteractable(25, interactables)
         if not i then return end
         if i.haveMet == false then
             i.dialog.introNotMet(i)
@@ -302,6 +361,12 @@ function Explore.keypressed(key)
             DialogManager:pop()
             State.push(DialogState, function () State.push(Utils.whichState(i), i) end)
         else
+            if i.type == "MapChange" then
+                local spX, spY = 10, 10  
+                Explore.exit()
+                State.push(Explore, i.mapPath, 60, 100)
+                return
+            end
             State.push(Utils.whichState(i), i)
         end
     end

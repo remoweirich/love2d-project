@@ -16,6 +16,16 @@ local Dialog = require "Dialog"
 
 local Player = require "entities/Player"
 
+local uiFont
+local uiScale = 24
+
+local function updateUI(winH)
+    uiScale = math.max(12, math.floor(winH / 25))
+    uiFont = love.graphics.newFont(uiScale)
+    uiFont:setFilter("linear", "linear")
+end
+
+
 
 function love.load()
 
@@ -46,6 +56,7 @@ function love.load()
     ShopUI.load()
     Dialog.load()
 
+    updateUI(love.graphics.getHeight())
     State.push(Explore, "maps/test2.lua", 350, 250)
 end
 
@@ -63,6 +74,46 @@ function love.update(dt)
 end
 
 
+function love.resize(w, h)
+    updateUI(h)
+    DialogManager.viewportW = w
+    DialogManager.viewportH = h
+end
+
+local function drawHeart(x, y, size)
+    local r = size / 4
+
+    love.graphics.circle("fill", x - r, y, r)
+    love.graphics.circle("fill", x + r, y, r)
+
+    love.graphics.polygon("fill", 
+        x - size / 2, y + r * 0.3, 
+        x + size / 2, y + r * 0.3, 
+        x, y + size * 0.75
+    )
+end
+
 function love.draw()
     State.draw()
+
+    -------------------
+    love.graphics.setFont(uiFont)
+    love.graphics.setColor(0.9, 0.15, 0.2)
+    
+    local marginX = uiScale * 1
+    local marginY = uiScale * 1
+    local heartSize = uiScale * 0.9
+    
+    local heartX = marginX + (heartSize / 2)
+    local heartY = marginY + (heartSize * 0.4)
+    drawHeart(heartX, heartY, heartSize)
+    
+    local padding = uiScale * 0.4
+    local textX = marginX + heartSize + padding
+    local textY = marginY
+    love.graphics.print(player.hp .. "/" .. player.maxHp, textX, textY)
+    
+    love.graphics.setColor(1, 1, 1)
+
+    ---------------------
 end

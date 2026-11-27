@@ -10,14 +10,14 @@ ItemData.templates = {
               base_weight = 6, value = 8, durability = 76, max_durability = 125,
               stat_bonuses = {attack=10, defence=1}, damage_type = "Slashing" },
     axe   = { class = "weapon", type="w_Axe", name = "Executioner's Axe",
-              base_weight = 12, value = 8, durability = 55, max_durability = 125,
+              base_weight = 12, value = 8, durability = 5, max_durability = 125,
               stat_bonuses = {attack=16, defence=0}, damage_type = "Slashing" },
     potion  = { class = "consumable", type = "c_Potion", name = "Great Health Potion",
-                base_weight = 2, value = 4, effect = "Heal for 10 HP",
+                base_weight = 1, value = 4, effect = "Heal for 10 HP",
                 effectFn = function(subject) subject:heal(10) end, me = true
             },
-    potion2 = { class = "consumable", type = "c_Potion", name = "Other Potion",
-                base_weight = 1, value = 3, effect = "Other effect",
+    potion2 = { class = "consumable", type = "c_Potion", name = "Charon's Kiss",
+                base_weight = 0.5, value = 5, effect = "A sweet, lingering warmth—followed by the Ferryman’s cold hand pulling you into his boat",
                 effectFn = function(subject) subject:takeDamage(10) end, me = false }
 }
 

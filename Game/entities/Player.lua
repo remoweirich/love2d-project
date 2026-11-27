@@ -12,7 +12,7 @@ Player.type = "Player"
 
 function Player.new(params, max_weight, gold)
     local instance = Entity.new(params)
-    instance.collider = world:newBSGRectangleCollider(params.x, params.y, 13, 11, 2.5)
+    instance.collider = world:newBSGRectangleCollider(params.x, params.y, 13, 13, 2.5)
     instance.spriteSheet = love.graphics.newImage(params.imagePath)
     instance.animations = {}
     instance.inventoryOpen = false

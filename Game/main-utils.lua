@@ -10,6 +10,9 @@ function Utils.nearestInteractable(range, interactables)
             w = i.collider.w
         elseif i.type == "Chest" then
             w = i.w
+        elseif i.type == "MapChange" then
+            print("testtt")
+            w = i.w
         end
         local dx = (i.x + w/2) - player.x
         local dy = (i.y + w/2) - player.y

@@ -4,7 +4,7 @@ CommonUI.icons = {
     { name = "Knight's Straight Sword", icon = "images/icons/KnightsStraightSword.png" },
     { name = "Great Health Potion", icon = "images/icons/GreatHealthPotion.png"},
     { name = "Executioner's Axe", icon = "images/icons/ExecutionersAxe.png"},
-    { name = "Other Potion", icon = "images/icons/GreatHealthPotion.png"},
+    { name = "Charon's Kiss", icon = "images/icons/CharonsKiss.png"},
 
 }
 

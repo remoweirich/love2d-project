@@ -6,11 +6,38 @@ EnemyData.templates = {
     zombie = { 
         name = "Zombie", hp = 20, 
         attack = 5, defence = 1,
-        speed = 20, goldDrop = 5,
+        speed = 20, goldDrop = 3,
         randomNoises = {
             "Grrrhhh", "Uurhhhhghg", "Rhhraaa", "grrruuhh",
         }
     },
+    unarmed_skeleton = {
+        name = "Unarmed Skeleton", hp = 13,
+        attack = 7, defence = 0,
+        speed = 35, goldDrop = 3,
+        randomNoises = {
+            "Clack-clack!", "*Rattle...*", "Creak-snap!", "*Teeth chattering*",
+            "*Hollow knocking*", "Clatter-clack!", "*Dry bone scraping*"
+        }
+    },
+    armed_skeleton = {
+        name = "Armed Skeleton", hp = 13,
+        attack = 15, defence = 2,
+        speed = 35, goldDrop = 6,
+        randomNoises = {
+            "Clack-clack!", "*Rattle...*", "Creak-snap!", "*Teeth chattering*",
+            "*Hollow knocking*", "Clatter-clack!", "*Dry bone scraping*"
+        }
+    },
+    shielded_skeleton = {
+        name = "Shielded Skeleton", hp = 13,
+        attack = 15, defence = 8,
+        speed = 30, goldDrop = 8,
+        randomNoises = {
+            "Clack-clack!", "*Rattle...*", "Creak-snap!", "*Teeth chattering*",
+            "*Hollow knocking*", "Clatter-clack!", "*Dry bone scraping*"
+        }
+    }
 }
 
 function EnemyData.new(key, x, y)
